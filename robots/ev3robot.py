@@ -8,7 +8,7 @@ import paho.mqtt.client as mqtt
 import uuid
 import subprocess
 #const
-SPEED_DEFAULT=70
+SPEED_DEFAULT=700
 
 #iot mosquitto
 node="%012x"%uuid.getnode()
@@ -19,7 +19,7 @@ iot.connect("ev3dev.gabbler.ru", 1977)
 class EV3Motor(object):
 	__name=''
 	__address=''
-	attrs_names={'position':'degrees','duty_cycle_sp':'speed','stop_command':'stop'}
+	attrs_names={'position':'degrees','duty_cycle_sp':'speed','stop_action':'stop'}
 	def __init__(self,address):
 		self.__address=address
 		with open('/sys/class/tacho-motor/'+self.__address+'/address','r') as fp:
@@ -34,13 +34,13 @@ class EV3Motor(object):
 		#~ self.rotate(speed,int(self.attrs['position_sp'])-degrees)
 		self.rotate(-abs(degrees),speed,stop)
 	def rotate(self,degrees=0,speed=SPEED_DEFAULT,stop='coast'):
-		self.set_attributes([('position_sp',degrees),('duty_cycle_sp',speed),('stop_command',stop),('command','run-to-rel-pos')])
+		self.set_attributes([('position_sp',degrees),('speed_sp',speed),('stop_action',stop),('command','run-to-rel-pos')])
 	def run(self,speed=SPEED_DEFAULT,stop='hold'):
-		self.set_attributes([('duty_cycle_sp',speed),('stop_command',stop),('command','run-forever')])
+		self.set_attributes([('speed_sp',speed),('stop_action',stop),('command','run-forever')])
 	def stop(self):
 		self.set_attributes([('command','stop')])
 	def publish(self):
-		for attr in ['position','duty_cycle_sp','stop_command']:
+		for attr in ['position','duty_cycle_sp','stop_action']:
 			with open('/sys/class/tacho-motor/%s/%s'%(self.__address,attr),'r') as fp:
 				iot.publish(bytes("%s/%s/%s"%(iot_name,self.__name,self.attrs_names[attr])),bytes(fp.read().replace('\n','')))
 
@@ -65,49 +65,28 @@ class EV3Color(EV3Sensor):
 
 
 class EV3Leds(object):
-	colors={'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'255'},'green':{'green':'255','red':'0'}}
+	colors={'black':{'green':'0','red':'0'},'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'35'},'green':{'green':'255','red':'0'},'orange':{'green':'255','red':'255'}}
 	def __init__(self,address):
 		self.__address=address
 	def set_mode(self,mode):
 		with open('/sys/class/leds/ev3:%s:ev3dev/trigger'%(self.__address),'w') as fp:
 			fp.write(mode)
-	def set_color(self,color):
+	def brightness(self,color):
 		with open('/sys/class/leds/ev3:%s:ev3dev/brightness'%(self.__address),'w') as fp:
 			fp.write(str(color))
-	def set_preset(self,color):
-		if color == 'black' or color == 0:
-			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(0))
-			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(0))
-		elif color == 'red' or color == 1:
-			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(255))
-			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(0))
-		elif color == 'yellow' or color == 2:
-			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(35))
-			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(255))
-		elif color == 'green' or color == 3:
-			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(0))
-			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(255))
-		elif color == 'orange' or color == 4:
-			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(255))
-			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
-				fp.write(str(255))
+	def color(self,color):
+		with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
+			fp.write(colors[color][0])
+		with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
+			fp.write(colors[color][1])
 
 
 class EV3Sound(object):
 	def play(self,sound):
 		pass
-	def play_tone(self,sound):	# as sudo
+	def play_tone(self,sound,time=''):	# as sudo
 		with open('/sys/devices/platform/snd-legoev3/tone','w') as fp:
-			fp.write(str(sound))
+			fp.write(str(sound) + ' ' + str(time))
 	def beep(self,params=None):
 		subprocess.call('beep %s'%(str(params)), shell=True)
 	def speak(self,msg,speed=175,bass=100):
@@ -141,6 +120,7 @@ class EV3LCD(object):
 		#~ os.close(fp)
 		#~ 
 
+
 class EV3Camera(object):
 	camera=None
 	def __init__(self,address):
@@ -156,6 +136,8 @@ class EV3Camera(object):
 		return self.camera.read()[1] if self.camera!=None else None
 	def publish(self):
 		pass
+
+
 class EV3Robot(object):
 	__motors={}
 	__sensors={}
