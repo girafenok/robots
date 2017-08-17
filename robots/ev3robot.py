@@ -6,6 +6,7 @@ from time import *
 from PIL import Image
 import paho.mqtt.client as mqtt
 import uuid
+import subprocess
 #const
 SPEED_DEFAULT=70
 
@@ -72,13 +73,49 @@ class EV3Leds(object):
 			fp.write(mode)
 	def set_color(self,color):
 		with open('/sys/class/leds/ev3:%s:ev3dev/brightness'%(self.__address),'w') as fp:
-			fp.write(color)
+			fp.write(str(color))
+	def set_preset(self,color):
+		if color == 'black' or color == 0:
+			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(0))
+			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(0))
+		elif color == 'red' or color == 1:
+			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(255))
+			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(0))
+		elif color == 'yellow' or color == 2:
+			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(35))
+			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(255))
+		elif color == 'green' or color == 3:
+			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(0))
+			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(255))
+		elif color == 'orange' or color == 4:
+			with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(255))
+			with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
+				fp.write(str(255))
+
 
 class EV3Sound(object):
 	def play(self,sound):
 		pass
-	def play_tone(self,sound):
-		pass
+	def play_tone(self,sound):	# as sudo
+		with open('/sys/devices/platform/snd-legoev3/tone','w') as fp:
+			fp.write(str(sound))
+	def beep(self,params=None):
+		subprocess.call('beep %s'%(str(params)), shell=True)
+	def speak(self,msg,speed=175,bass=100):
+		subprocess.call('espeak -a %s -s %s "%s" --stdout | aplay'%(bass,speed,msg), shell=True)
+	def set_volume(self,volume):
+		subprocess.call('amixer set Playback,0 %s'%(str(volume) + '%'), shell=True)
+
+
 class EV3Button(object):
 	def __init__(self,address):
 		self.__address=address
@@ -147,8 +184,10 @@ class EV3Robot(object):
 		self.leds['left:green']=EV3Leds('left:green')
 		self.leds['right:red']=EV3Leds('right:red')
 		self.leds['right:green']=EV3Leds('right:green')
+		self.leds['right']=EV3Leds('right')
+		self.leds['left']=EV3Leds('left')
 		#Sound
-		sound=EV3Sound()
+		self.sound=EV3Sound()
 		#Buttons
 		self.buttons['left']=EV3Button('left')
 		self.buttons['right']=EV3Button('right')
@@ -256,9 +295,3 @@ if __name__ == '__main__':
 		#~ print(robo.sensor('in2').value())
 		#~ cv2.imwrite("capture.jpg", robo.capture())
 		#~ sleep(1)
-
-
-
-
-
-
