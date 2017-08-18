@@ -89,7 +89,7 @@ class EV3Led(object):
 
 class EV3Sound(object):
 	#4 - 1 octave, 5 - 2 octave, 6 - 3 octave, 7 - 4 octave, 8 - 5 octave,0 - sub octave, 1 - contr octave, 2 - big octave, 3 - small octave,
-	tones={'C':[16.352,32.703,65.406,130.81,261.63,523.25,1046.5,2093,4186,8372,16744], 'C#':[17.324,34.648,69.296,138.59,277.18,554.37,1108.7,2217.5,4434.9,8869.8,17739.7], 'D':[18.354,36.708,73.416,146.83,293.66,587.33,1174.7,2349.3,4698.6,9397.3,18794.5], 'D#':[], 'E':[], 'F':[], 'F#':[], 'G':[], 'G#':[], 'A':[], 'A#':[], 'B':[]}
+	__tones_map={'C':[16.352,32.703,65.406,130.81,261.63,523.25,1046.5,2093,4186,8372,16744], 'C#':[17.324,34.648,69.296,138.59,277.18,554.37,1108.7,2217.5,4434.9,8869.8,17739.7], 'D':[18.354,36.708,73.416,146.83,293.66,587.33,1174.7,2349.3,4698.6,9397.3,18794.5], 'D#':[], 'E':[20.602,41.203,82.407,164.81,329.63,659.26,1318.5,2637,5274,10548,21096.2], 'F':[21.827,43.654,87.307,174.61,349.23,698.46,1396.9,2793.8,5587.7,11175,22350.6], 'F#':[], 'G':[], 'G#':[], 'A':[], 'A#':[], 'B':[]}
 	def play(self,fname,async=False):
 		if async:
 			Thread(target=self.__play, args=(fname,)).start()
@@ -98,16 +98,24 @@ class EV3Sound(object):
 	def __play(self,fname):
 		fname=os.path.exists('/home/robot/.sounds/%s'%fname)  and '/home/robot/.sounds/%s'%fname or 'music/%s'%fname
 		os.system('mpg123 -q %s '%fname)
-	def tone(self,sound,time,async=False):
+	def tone(self,tone,time,async=False):
 		if async:
-			Thread(target=self.__tone, args=(sound,time,)).start()
+			Thread(target=self.__tone, args=(tone,time,)).start()
 		else:
-			self.__tone(sound,time)
-	def __tone(self,sound,time):
-		if isinstance(sound,(str,unicode)):	sound=self.tones[sound[:len(sound)-1]][int(sound[-1])]
+			self.__tone(tone,time)
+	def __tone(self,tone,time):
+		if isinstance(tone,(str,unicode)):	tone=self.__tones_map[tone[:len(tone)-1]][int(tone[-1])]
  		with open('/sys/devices/platform/snd-legoev3/tone','w') as fp:
-			fp.write("%i %i"%(sound,time))
+			fp.write("%i %i"%(tone,time))
 		sleep(time/1000.0)
+	def tones(self,tones,async=False):
+		if async:
+			Thread(target=self.__tone, args=(tones,)).start()
+		else:
+			self.__tones(tones)
+	def __tones(self,tones):
+		for tone in tones:
+			self.__tone(tone[0],tone[1])
 	def beep(self):
 		self.__tone(440,250)
 	def speak(self,msg,speed=175,bass=100,async=False):
@@ -217,40 +225,40 @@ class EV3Robot(object):
 	def publish(self,topic,data):
 		iot.publish(bytes("%s/%s"%(iot_name,topic)),bytes(data))
 	#move
-	def forward(self,degrees=0,speed=SPEED_DEFAULT,stop='hold'):
+	def forward(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
 		try:
-			self.__motors['outB'].forward(degrees,speed,stop)
+			self.__motors['outB'].forward(rot,speed,stop)
 		except:
 			pass
 		try:
-			self.__motors['outC'].forward(degrees,speed,stop)
+			self.__motors['outC'].forward(rot,speed,stop)
 		except:
 			pass
-	def backward(self,degrees=0,speed=SPEED_DEFAULT,stop='hold'):
+	def backward(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
 		try:
-			self.__motors['outB'].backward(degrees,speed,stop)
-		except:
-			pass
-		try:
-			self.__motors['outC'].backward(degrees,speed,stop)
-		except:
-			pass
-	def left(self,degrees=0,speed=SPEED_DEFAULT,stop='hold'):
-		try:
-			self.__motors['outB'].forward(degrees,speed,stop)
+			self.__motors['outB'].backward(rot,speed,stop)
 		except:
 			pass
 		try:
-			self.__motors['outC'].backward(degrees,speed,stop)
+			self.__motors['outC'].backward(rot,speed,stop)
 		except:
 			pass
-	def right(self,degrees=0,speed=SPEED_DEFAULT,stop='hold'):
+	def left(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
 		try:
-			self.__motors['outB'].backward(degrees,speed,stop)
+			self.__motors['outB'].forward(rot,speed,stop)
 		except:
 			pass
 		try:
-			self.__motors['outC'].forward(degrees,speed,stop)
+			self.__motors['outC'].backward(rot,speed,stop)
+		except:
+			pass
+	def right(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
+		try:
+			self.__motors['outB'].backward(rot,speed,stop)
+		except:
+			pass
+		try:
+			self.__motors['outC'].forward(rot,speed,stop)
 		except:
 			pass
 	#sensors
