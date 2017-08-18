@@ -6,7 +6,8 @@ from time import *
 from PIL import Image
 import paho.mqtt.client as mqtt
 import uuid
-import subprocess
+#~ import subprocess
+from threading import Thread
 #const
 SPEED_DEFAULT=700
 
@@ -14,33 +15,35 @@ SPEED_DEFAULT=700
 node="%012x"%uuid.getnode()
 iot_name="ev3-%s"%node[2:]
 iot=mqtt.Client(iot_name)
-iot.connect("ev3dev.gabbler.ru", 1977)
-
+try:
+	iot.connect("ev3dev.gabbler.ru", 1977)
+except:
+	pass
 class EV3Motor(object):
 	__name=''
 	__address=''
-	attrs_names={'position':'degrees','duty_cycle_sp':'speed','stop_action':'stop'}
+	attrs_names={'position':'rot','speed_sp':'speed','stop_action':'stop'}
 	def __init__(self,address):
 		self.__address=address
 		with open('/sys/class/tacho-motor/'+self.__address+'/address','r') as fp:
 			self.__name=fp.read().replace('\n','')
+		self.set_attributes([('command','reset')])
 	def set_attributes(self,attributes):
 		for attr in attributes:
 			with open('/sys/class/tacho-motor/%s/%s'%(self.__address,attr[0]),'w') as fp:
 				fp.write(str(attr[1]))	
-	def forward(self,degrees=0,speed=SPEED_DEFAULT,stop='hold'):
-		self.rotate(abs(degrees),speed,stop)
-	def backward(self,degrees=0,speed=SPEED_DEFAULT,stop='hold'):
-		#~ self.rotate(speed,int(self.attrs['position_sp'])-degrees)
-		self.rotate(-abs(degrees),speed,stop)
-	def rotate(self,degrees=0,speed=SPEED_DEFAULT,stop='coast'):
-		self.set_attributes([('position_sp',degrees),('speed_sp',speed),('stop_action',stop),('command','run-to-rel-pos')])
+	def forward(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
+		self.rotate(abs(rot),speed,stop)
+	def backward(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
+		self.rotate(-abs(rot),speed,stop)
+	def rotate(self,rot=0,speed=SPEED_DEFAULT,stop='coast'):
+		self.set_attributes([('position_sp',rot*360),('speed_sp',speed),('stop_action',stop),('command','run-to-rel-pos')])
 	def run(self,speed=SPEED_DEFAULT,stop='hold'):
 		self.set_attributes([('speed_sp',speed),('stop_action',stop),('command','run-forever')])
 	def stop(self):
 		self.set_attributes([('command','stop')])
 	def publish(self):
-		for attr in ['position','duty_cycle_sp','stop_action']:
+		for attr in ['position','speed_sp','stop_action']:
 			with open('/sys/class/tacho-motor/%s/%s'%(self.__address,attr),'r') as fp:
 				iot.publish(bytes("%s/%s/%s"%(iot_name,self.__name,self.attrs_names[attr])),bytes(fp.read().replace('\n','')))
 
@@ -65,36 +68,59 @@ class EV3Color(EV3Sensor):
 
 
 class EV3Leds(object):
-	colors={'black':{'green':'0','red':'0'},'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'35'},'green':{'green':'255','red':'0'},'orange':{'green':'255','red':'255'}}
+	colors={'black':{'green':'0','red':'0'},'orange':{'green':'255','red':'255'},'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'35'},'green':{'green':'255','red':'0'}}
 	def __init__(self,address):
 		self.__address=address
-	def set_mode(self,mode):
+	def color(self,c):
+		with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
+			fp.write(self.colors[c]['green'])
+		with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
+			fp.write(self.colors[c]['red'])
+class EV3Led(object):
+	def __init__(self,address):
+		self.__address=address
+	def mode(self,mode):
 		with open('/sys/class/leds/ev3:%s:ev3dev/trigger'%(self.__address),'w') as fp:
 			fp.write(mode)
 	def brightness(self,color):
 		with open('/sys/class/leds/ev3:%s:ev3dev/brightness'%(self.__address),'w') as fp:
 			fp.write(str(color))
-	def color(self,color):
-		with open('/sys/class/leds/ev3:%s:green:ev3dev/brightness'%(self.__address),'w') as fp:
-			fp.write(colors[color][0])
-		with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
-			fp.write(colors[color][1])
 
 
 class EV3Sound(object):
-	def play(self,sound):
-		pass
-	def play_tone(self,sound,time=''):	# as sudo
-		with open('/sys/devices/platform/snd-legoev3/tone','w') as fp:
-			fp.write(str(sound) + ' ' + str(time))
-	def beep(self,params=None):
-		subprocess.call('beep %s'%(str(params)), shell=True)
-	def speak(self,msg,speed=175,bass=100):
-		subprocess.call('espeak -a %s -s %s "%s" --stdout | aplay'%(bass,speed,msg), shell=True)
-	def set_volume(self,volume):
-		subprocess.call('amixer set Playback,0 %s'%(str(volume) + '%'), shell=True)
-
-
+	#4 - 1 octave, 5 - 2 octave, 6 - 3 octave, 7 - 4 octave, 8 - 5 octave,0 - sub octave, 1 - contr octave, 2 - big octave, 3 - small octave,
+	tones={'C':[16.352,32.703,65.406,130.81,261.63,523.25,1046.5,2093,4186,8372,16744], 'C#':[17.324,34.648,69.296,138.59,277.18,554.37,1108.7,2217.5,4434.9,8869.8,17739.7], 'D':[18.354,36.708,73.416,146.83,293.66,587.33,1174.7,2349.3,4698.6,9397.3,18794.5], 'D#':[], 'E':[], 'F':[], 'F#':[], 'G':[], 'G#':[], 'A':[], 'A#':[], 'B':[]}
+	def play(self,fname,async=False):
+		if async:
+			Thread(target=self.__play, args=(fname,)).start()
+		else:
+			self.__play(fname)
+	def __play(self,fname):
+		fname=os.path.exists('/home/robot/.sounds/%s'%fname)  and '/home/robot/.sounds/%s'%fname or 'music/%s'%fname
+		os.system('mpg123 -q %s '%fname)
+	def tone(self,sound,time,async=False):
+		if async:
+			Thread(target=self.__tone, args=(sound,time,)).start()
+		else:
+			self.__tone(sound,time)
+	def __tone(self,sound,time):
+		if isinstance(sound,(str,unicode)):	sound=self.tones[sound[:len(sound)-1]][int(sound[-1])]
+ 		with open('/sys/devices/platform/snd-legoev3/tone','w') as fp:
+			fp.write("%i %i"%(sound,time))
+		sleep(time/1000.0)
+	def beep(self):
+		self.__tone(440,250)
+	def speak(self,msg,speed=175,bass=100,async=False):
+		if async:
+			Thread(target=self.__speek, args=(msg,speed,bass,)).start()
+		else:
+			self.__speak(msg,speed,bass)
+	def __speak(self,msg,speed=175,bass=100):
+		os.system('espeak -a %s -s %s "%s" --stdout | aplay'%(bass,speed,msg))
+	def volume(self,volume):
+		with open('/sys/devices/platform/snd-legoev3/volume','w') as fp:
+			fp.write(str(volume))
+			
 class EV3Button(object):
 	def __init__(self,address):
 		self.__address=address
@@ -120,13 +146,12 @@ class EV3LCD(object):
 		#~ os.close(fp)
 		#~ 
 
-
 class EV3Camera(object):
 	camera=None
 	def __init__(self,address):
-		import cv2
 		self.__address=address
 		try:
+			import cv2
 			self.camera=cv2.VideoCapture(self.__address)
 			#~ capture.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH ,640)
 			#~ capture.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT ,480)
@@ -136,15 +161,14 @@ class EV3Camera(object):
 		return self.camera.read()[1] if self.camera!=None else None
 	def publish(self):
 		pass
-
-
 class EV3Robot(object):
 	__motors={}
 	__sensors={}
-	leds={}
+	__leds={}
 	buttons={}
 	camera=None
-	lcd=None
+	__lcd=None
+	__sound=None
 	sensor_types={'lego-ev3-color':lambda a: EV3Color(a),'lego-nxt-touch':lambda a: EV3Sensor(a),'lego-ev3-touch':lambda a: EV3Sensor(a),'lego-ev3-ir':lambda a: EV3Sensor(a),'lego-ev3-us':lambda a: EV3Sensor(a),'lego-nxt-us':lambda a: EV3Sensor(a),'lego-nxt-light':lambda a: EV3Sensor(a),'nxt-analog':lambda a: EV3Sensor(a),'lego-ev3-gyro':lambda a: EV3Sensor(a)}
 	def __init__(self,is_camera=False):
 		#Camera
@@ -162,14 +186,14 @@ class EV3Robot(object):
 		except:
 			pass
 		#Leds
-		self.leds['left:red']=EV3Leds('left:red')
-		self.leds['left:green']=EV3Leds('left:green')
-		self.leds['right:red']=EV3Leds('right:red')
-		self.leds['right:green']=EV3Leds('right:green')
-		self.leds['right']=EV3Leds('right')
-		self.leds['left']=EV3Leds('left')
+		self.__leds['left:red']=EV3Led('left:red')
+		self.__leds['left:green']=EV3Led('left:green')
+		self.__leds['right:red']=EV3Led('right:red')
+		self.__leds['right:green']=EV3Led('right:green')
+		self.__leds['left']=EV3Leds('left')
+		self.__leds['right']=EV3Leds('right')
 		#Sound
-		self.sound=EV3Sound()
+		self.__sound=EV3Sound()
 		#Buttons
 		self.buttons['left']=EV3Button('left')
 		self.buttons['right']=EV3Button('right')
@@ -178,16 +202,18 @@ class EV3Robot(object):
 		self.buttons['ok']=EV3Button('ok')
 		self.buttons['cancel']=EV3Button('cancel')
 		#LCD
-		self.lcd=EV3LCD()
+		self.__lcd=EV3LCD()
 		print(self.__sensors,self.__motors)
 	def motor(self,port):
 		return self.__motors[port]
 	def sensor(self,port):
 		return self.__sensors[port]
 	def led(self,led):
-		return self.leds[led]
+		return self.__leds[led]
 	def screen(self):
-		return self.lcd
+		return self.__lcd
+	def sound(self):
+		return self.__sound
 	def publish(self,topic,data):
 		iot.publish(bytes("%s/%s"%(iot_name,topic)),bytes(data))
 	#move
@@ -277,3 +303,9 @@ if __name__ == '__main__':
 		#~ print(robo.sensor('in2').value())
 		#~ cv2.imwrite("capture.jpg", robo.capture())
 		#~ sleep(1)
+
+
+
+
+
+
