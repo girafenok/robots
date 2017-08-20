@@ -59,36 +59,16 @@ class EV3Sensor(object):
 	def value(self):
 		with open('/sys/class/lego-sensor/%s/value0'%(self.__address),'r') as fp:
 			return float(fp.read())
-	def value1(self):
-		with open('/sys/class/lego-sensor/%s/value1'%(self.__address),'r') as fp:
-			return float(fp.read())
-	def value2(self):
-		with open('/sys/class/lego-sensor/%s/value2'%(self.__address),'r') as fp:
-			return float(fp.read())
 	def publish(self):
 		with open('/sys/class/lego-sensor/%s/value0'%(self.__address),'r') as fp:
 			iot.publish(bytes("%s/%s/value"%(iot_name,self.__name)),bytes(fp.read().replace('\n','')))
 		
 class EV3Color(EV3Sensor):
-	__colors={0:'none', 1: 'black', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'red', 6: 'white', 7: 'brown'}
-	def __init__(self,address):
-		EV3Sensor.__init__(self,address)
-		self.set_mode_color()
-	def set_mode_color(self):
-		self.set_mode('COL-COLOR')
-	def set_mode_light(self):
-		self.set_mode('COL-REFLECT')
-	def set_mode_ambient(self):
-		self.set_mode('COL-AMBIENT')
-	def set_mode_rgb(self):
-		self.set_mode('RGB-RAW')
-	def color(self):
-		return self.__colors[int(self.value())]
-	def rgb(self):
-		return (self.value(),self.value1(),self.value2())
+	pass
+
 
 class EV3Leds(object):
-	colors={'black':{'green':'0','red':'0'},'orange':{'green':'255','red':'255'},'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'35'},'green':{'green':'255','red':'0'},'brown':{'green':'69','red':'89'}}
+	colors={'black':{'green':'0','red':'0'},'orange':{'green':'255','red':'255'},'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'35'},'green':{'green':'255','red':'0'}}
 	def __init__(self,address):
 		self.__address=address
 	def color(self,c):
@@ -99,17 +79,32 @@ class EV3Leds(object):
 class EV3Led(object):
 	def __init__(self,address):
 		self.__address=address
-	def set_mode(self,mode):
+	def mode(self,mode):
 		with open('/sys/class/leds/ev3:%s:ev3dev/trigger'%(self.__address),'w') as fp:
 			fp.write(mode)
-	def brightness(self,value):
+	def brightness(self,color):
 		with open('/sys/class/leds/ev3:%s:ev3dev/brightness'%(self.__address),'w') as fp:
-			fp.write(str(int(value)))
+			fp.write(str(color))
 
 
 class EV3Sound(object):
-	#4 - 1 octave, 5 - 2 octave, 6 - 3 octave, 7 - 4 octave, 8 - 5 octave,0 - sub octave, 1 - contr octave, 2 - big octave, 3 - small octave,
-	__tones_map={'C':[16.352,32.703,65.406,130.81,261.63,523.25,1046.5,2093,4186,8372,16744], 'C#':[17.324,34.648,69.296,138.59,277.18,554.37,1108.7,2217.5,4434.9,8869.8,17739.7], 'D':[18.354,36.708,73.416,146.83,293.66,587.33,1174.7,2349.3,4698.6,9397.3,18794.5], 'D#':[], 'E':[20.602,41.203,82.407,164.81,329.63,659.26,1318.5,2637,5274,10548,21096.2], 'F':[21.827,43.654,87.307,174.61,349.23,698.46,1396.9,2793.8,5587.7,11175,22350.6], 'F#':[], 'G':[], 'G#':[], 'A':[], 'A#':[], 'B':[]}
+	# 0 - sub octave, 1 - contr octave, 2 - big octave, 3 - small octave, 4 - 1 octave, 5 - 2 octave, 6 - 3 octave, 7 - 4 octave, 8 - 5 octave
+	#			0		1		2		3		  4		  5		 6		 7		 8
+	__tones_map={
+		'sleep': [0],
+		'C': [16.352, 32.703, 65.406, 130.812, 261.62, 523.25, 1046.5, 2093,   4186],
+		'C#':[17.324, 34.648, 69.296, 138.59,  277.18, 554.37, 1108.7, 2217.5, 4434.8],
+		'D': [18.354, 36.708, 73.416, 146.83,  293.66, 587.33, 1174.7, 2349.3, 4698.6],
+		'D#':[19.44,  38.88,  77.78,  155.56,  311.13, 622.26, 1244.5, 2489,   4978],
+		'E': [20.602, 41.203, 82.407, 164.81,  329.63, 659.26, 1318.5, 2637,   5274],
+		'F': [21.827, 43.654, 87.307, 174.61,  349.23, 698.46, 1396.9, 2793.8, 5587.7],
+		'F#':[23.12,  46.25,  92.5,   185,     370,    740,    1480,   2960,   5920],
+		'G': [24.5,   49,     98,     196,     392,    784,    1568,   3136,   6272],
+		'G#':[25.95,  51.9,   103.8,  207,     415.3,  830.6,  1661.2, 3332.4, 6664.8],
+		'A': [27.5,   55,     110,    220,     440,    880,    1720,   3440,   6880],
+		'A#': [29.13,  58.26,  116.54, 233,     466.16, 932.32, 1864.6, 3729.2, 7458.4],
+		'B': [30.87,  61,     123.48, 247,     493,    987.75, 1975.5, 3951,   7902]
+	}
 	def play(self,fname,async=False):
 		if async:
 			Thread(target=self.__play, args=(fname,)).start()
@@ -124,7 +119,7 @@ class EV3Sound(object):
 		else:
 			self.__tone(tone,time)
 	def __tone(self,tone,time):
-		if isinstance(tone,(str,unicode)):	tone=self.__tones_map[tone[:len(tone)-1]][int(tone[-1])]
+		tone = 0 if tone == "sleep" else self.__tones_map[tone[:len(tone)-1]][int(tone[-1])]
  		with open('/sys/devices/platform/snd-legoev3/tone','w') as fp:
 			fp.write("%i %i"%(tone,time))
 		sleep(time/1000.0)
@@ -138,13 +133,13 @@ class EV3Sound(object):
 			self.__tone(tone[0],tone[1])
 	def beep(self):
 		self.__tone(440,250)
-	def say(self,msg,speed=175,bass=100,async=False):
+	def speak(self,msg,speed=175,bass=100,async=False):
 		if async:
-			Thread(target=self.__say, args=(msg,speed,bass,)).start()
+			Thread(target=self.__speek, args=(msg,speed,bass,)).start()
 		else:
-			self.__say(msg,speed,bass)
-	def __say(self,msg,speed=175,bass=100):
-		os.system('espeak -a %s -s %s "%s" --stdout | aplay -q'%(bass,speed,msg))
+			self.__speak(msg,speed,bass)
+	def __speak(self,msg,speed=175,bass=100):
+		os.system('espeak -a %s -s %s "%s" --stdout | aplay'%(bass,speed,msg))
 	def volume(self,volume):
 		with open('/sys/devices/platform/snd-legoev3/volume','w') as fp:
 			fp.write(str(volume))
@@ -330,10 +325,4 @@ if __name__ == '__main__':
 		#~ pass
 		#~ print(robo.sensor('in2').value())
 		#~ cv2.imwrite("capture.jpg", robo.capture())
-		#~ sleep(1)
-
-
-
-
-
-
+#~ sleep(1)
