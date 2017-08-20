@@ -59,16 +59,36 @@ class EV3Sensor(object):
 	def value(self):
 		with open('/sys/class/lego-sensor/%s/value0'%(self.__address),'r') as fp:
 			return float(fp.read())
+	def value1(self):
+		with open('/sys/class/lego-sensor/%s/value1'%(self.__address),'r') as fp:
+			return float(fp.read())
+	def value2(self):
+		with open('/sys/class/lego-sensor/%s/value2'%(self.__address),'r') as fp:
+			return float(fp.read())
 	def publish(self):
 		with open('/sys/class/lego-sensor/%s/value0'%(self.__address),'r') as fp:
 			iot.publish(bytes("%s/%s/value"%(iot_name,self.__name)),bytes(fp.read().replace('\n','')))
 		
 class EV3Color(EV3Sensor):
-	pass
-
+	__colors={0:'none', 1: 'black', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'red', 6: 'white', 7: 'brown'}
+	def __init__(self,address):
+		EV3Sensor.__init__(self,address)
+		self.set_mode_color()
+	def set_mode_color(self):
+		self.set_mode('COL-COLOR')
+	def set_mode_light(self):
+		self.set_mode('COL-REFLECT')
+	def set_mode_ambient(self):
+		self.set_mode('COL-AMBIENT')
+	def set_mode_rgb(self):
+		self.set_mode('RGB-RAW')
+	def color(self):
+		return self.__colors[int(self.value())]
+	def rgb(self):
+		return (self.value(),self.value1(),self.value2())
 
 class EV3Leds(object):
-	colors={'black':{'green':'0','red':'0'},'orange':{'green':'255','red':'255'},'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'35'},'green':{'green':'255','red':'0'}}
+	colors={'black':{'green':'0','red':'0'},'orange':{'green':'255','red':'255'},'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'35'},'green':{'green':'255','red':'0'},'brown':{'green':'69','red':'89'}}
 	def __init__(self,address):
 		self.__address=address
 	def color(self,c):
@@ -79,12 +99,12 @@ class EV3Leds(object):
 class EV3Led(object):
 	def __init__(self,address):
 		self.__address=address
-	def mode(self,mode):
+	def set_mode(self,mode):
 		with open('/sys/class/leds/ev3:%s:ev3dev/trigger'%(self.__address),'w') as fp:
 			fp.write(mode)
-	def brightness(self,color):
+	def brightness(self,value):
 		with open('/sys/class/leds/ev3:%s:ev3dev/brightness'%(self.__address),'w') as fp:
-			fp.write(str(color))
+			fp.write(str(int(value)))
 
 
 class EV3Sound(object):
@@ -118,13 +138,13 @@ class EV3Sound(object):
 			self.__tone(tone[0],tone[1])
 	def beep(self):
 		self.__tone(440,250)
-	def speak(self,msg,speed=175,bass=100,async=False):
+	def say(self,msg,speed=175,bass=100,async=False):
 		if async:
-			Thread(target=self.__speek, args=(msg,speed,bass,)).start()
+			Thread(target=self.__say, args=(msg,speed,bass,)).start()
 		else:
-			self.__speak(msg,speed,bass)
-	def __speak(self,msg,speed=175,bass=100):
-		os.system('espeak -a %s -s %s "%s" --stdout | aplay'%(bass,speed,msg))
+			self.__say(msg,speed,bass)
+	def __say(self,msg,speed=175,bass=100):
+		os.system('espeak -a %s -s %s "%s" --stdout | aplay -q'%(bass,speed,msg))
 	def volume(self,volume):
 		with open('/sys/devices/platform/snd-legoev3/volume','w') as fp:
 			fp.write(str(volume))
