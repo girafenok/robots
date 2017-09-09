@@ -25,19 +25,19 @@ crazyfrog = (("D3",f),("F3",f),("D3",f/2),("D3",f/4),("G3",f/2),("D3",f/2),("C3"
 
 robo=NXTRobot("00:16:53:0E:B5:80")#NXT ID <- Settings - NXT Version
 
-robo.sound().tones(starwars)
+robo.tones(starwars)
 sleep(2)
 
-robo.sound().tones(dengi)
+robo.tones(dengi)
 sleep(2)
 
-robo.sound().tones(phone)
+robo.tones(phone)
 sleep(2)
 
-robo.sound().tones(nokia)
+robo.tones(nokia)
 sleep(2)
 
-robo.sound().tones(pinkpanther)
+robo.tones(pinkpanther)
 sleep(2)
 
-robo.sound().tones(crazyfrog)
+robo.tones(crazyfrog)

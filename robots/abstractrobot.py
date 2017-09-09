@@ -169,6 +169,19 @@ class AbstractRobot(object):
 		return self._sound
 	def publish(self,topic,data):
 		iot.publish(bytes("%s/%s"%(iot_name,topic)),bytes(data))
+	#sound
+	def beep(self):
+		self._sound.beep()
+	def tone(self,tone,time,async=False):
+		self._sound.tone(tone,time,async)
+	def tones(self,tones,async=False):
+		self._sound.tones(tones,async)
+	def play(self,fname,async=False):
+		self._sound.play(fname,async)
+	def say(self,msg,speed=175,bass=100,async=False):
+		self._sound.say(msg,speed,bass,async)
+	def volume(self,vol):
+		self._sound.volume(vol)
 	#move
 	def speed(self,value):
 		self._speed=value
