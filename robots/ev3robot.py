@@ -1,5 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#
+#  ev3robot.py
+#  
+#  Copyright 2017 girafenok <girafenok@gabbler.ru>
+#  
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#  
+#  
 
 import os,stat
 from time import *
@@ -20,11 +41,13 @@ from abstractrobot import *
 	#~ pass
 class EV3Motor(AbstractMotor):
 	attrs_names={'position':'rot','speed_sp':'speed','stop_action':'stop'}
-	speed_koef=1050.0/1000.0
+	speed_koef=1050.0/1023.0
 	def __init__(self,address):
 		self._address=address
 		with open('/sys/class/tacho-motor/'+self._address+'/address','r') as fp:
 			self._name=fp.read().replace('\n','')
+		self._reset()
+	def _reset(self):
 		self._set_attributes([('command','reset')])
 	def _set_attributes(self,attributes):
 		for attr in attributes:
@@ -33,14 +56,17 @@ class EV3Motor(AbstractMotor):
 	def _get_attribute(self,attr):
 		with open('/sys/class/tacho-motor/%s/%s'%(self._address,attr),'r') as fp:
 			return fp.read().replace('\n','')
-	def _rotate(self,rot,speed,stop):
+	def _rotate(self,speed,rot,stop,wait):
 		self._set_attributes([('position_sp',rot*360),('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-to-rel-pos')])
 		start_position=int(self._get_attribute('position'))
-		while int(self._get_attribute('position'))!=start_position+rot*360: pass
+		if wait:
+			while int(self._get_attribute('position'))!=start_position+rot*360: pass
 	def _run(self,speed,stop):
 		self._set_attributes([('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-forever')])
 	def _stop(self):
 		self._set_attributes([('command','stop')])
+	def _value(self):
+		int(self._get_attribute('position'))
 	def _publish(self):
 		attrs={}
 		for attr in ['position','speed_sp','stop_action']:
@@ -97,15 +123,15 @@ class EV3Leds(object):
 			fp.write(self.colors[c]['green'])
 		with open('/sys/class/leds/ev3:%s:red:ev3dev/brightness'%(self.__address),'w') as fp:
 			fp.write(self.colors[c]['red'])
-class EV3Led(object):
-	def __init__(self,address):
-		self.__address=address
-	def set_mode(self,mode):
-		with open('/sys/class/leds/ev3:%s:ev3dev/trigger'%(self.__address),'w') as fp:
-			fp.write(mode)
-	def brightness(self,value):
-		with open('/sys/class/leds/ev3:%s:ev3dev/brightness'%(self.__address),'w') as fp:
-			fp.write(str(int(value)))
+#~ class EV3Led(object):
+	#~ def __init__(self,address):
+		#~ self.__address=address
+	#~ def set_mode(self,mode):
+		#~ with open('/sys/class/leds/ev3:%s:ev3dev/trigger'%(self.__address),'w') as fp:
+			#~ fp.write(mode)
+	#~ def brightness(self,value):
+		#~ with open('/sys/class/leds/ev3:%s:ev3dev/brightness'%(self.__address),'w') as fp:
+			#~ fp.write(str(int(value)))
 
 
 class EV3Sound(AbstractSound):
@@ -166,9 +192,9 @@ class EV3Camera(object):
 		pass
 class EV3Robot(AbstractRobot):
 	_sensor_types={'lego-ev3-color':lambda a: EV3Color(a),'lego-nxt-touch':lambda a: EV3Sensor(a),'lego-ev3-touch':lambda a: EV3Sensor(a),'lego-ev3-ir':lambda a: EV3Sensor(a),'lego-ev3-us':lambda a: EV3Sensor(a),'lego-nxt-us':lambda a: EV3Sensor(a),'lego-nxt-light':lambda a: EV3Sensor(a),'nxt-analog':lambda a: EV3Sensor(a),'lego-ev3-gyro':lambda a: EV3Sensor(a)}
-	def __init__(self,is_camera=False):
+	def __init__(self,camera=False):
 		#Camera
-		if is_camera: self._camera=EV3Camera(0)
+		if camera: self._camera=EV3Camera(0)
 		#Motor
 		for motor in os.listdir('/sys/class/tacho-motor'):
 			with open('/sys/class/tacho-motor/'+motor+'/address','r') as fp:
@@ -182,10 +208,10 @@ class EV3Robot(AbstractRobot):
 		except:
 			pass
 		#Leds
-		self._leds['left:red']=EV3Led('left:red')
-		self._leds['left:green']=EV3Led('left:green')
-		self._leds['right:red']=EV3Led('right:red')
-		self._leds['right:green']=EV3Led('right:green')
+		self._leds['left:red']=AbstractLed('ev3:left:red:ev3dev')
+		self._leds['left:green']=AbstractLed('ev3:left:green:ev3dev')
+		self._leds['right:red']=AbstractLed('ev3:right:red:ev3dev')
+		self._leds['right:green']=AbstractLed('ev3:right:green:ev3dev')
 		self._leds['left']=EV3Leds('left')
 		self._leds['right']=EV3Leds('right')
 		#Sound

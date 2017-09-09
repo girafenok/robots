@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from ev3robot import *
 
-#max_speed = 1000
+#max_speed = 1023
 robo=EV3Robot()
-robo.motor('outA').rotate(2,800)#rot,speed
-robo.motor('outA').rotate(-1,800)#rot,speed
+robo.motor('outA').rotate(rot=2,speed=800)
+robo.motor('outA').rotate(rot=-1,speed=800)

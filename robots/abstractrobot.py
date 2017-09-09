@@ -1,9 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#
+#  abstractrobot.py
+#  
+#  Copyright 2017 girafenok <girafenok@gabbler.ru>
+#  
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#  
+#  
 
-import os,stat
-from time import *
-from PIL import Image
+
+
+
+import os
+#from time import *
+#~ from PIL import Image
 import paho.mqtt.client as mqtt
 import uuid
 #~ import subprocess
@@ -13,57 +37,52 @@ SPEED_DEFAULT=700
 
 #iot mosquitto
 node="%012x"%uuid.getnode()
-iot_name="ev3-%s"%node[2:]
+iot_name="robo-%s"%node[2:]
 iot=mqtt.Client(iot_name)
 try:
 	iot.connect("ev3dev.gabbler.ru", 1977)
 except:
 	print('No connection to mqtt server')
 
+class AbstractLed(object):
+	def __init__(self,address):
+		self.__address=address
+	def set_mode(self,mode):
+		with open('/sys/class/leds/%s/trigger'%(self.__address),'w') as fp:
+			fp.write(mode)
+	def brightness(self,value):
+		with open('/sys/class/leds/%s/brightness'%(self.__address),'w') as fp:
+			fp.write(str(int(value)))
+
+
+
+
 class AbstractMotor(object):
 	_name=''
 	_address=''
-	def forward(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
-		self.rotate(abs(rot),speed,stop)
-	def backward(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
-		self.rotate(-abs(rot),speed,stop)
-	def rotate(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
-		self._rotate(rot,speed,stop)
+	def reset(self):
+		self._reset()
+	def forward(self,rot=1,speed=SPEED_DEFAULT,stop='hold',wait=True):
+		self.rotate(rot=abs(rot),speed=speed,stop=stop,wait=wait)
+	def backward(self,rot=1,speed=SPEED_DEFAULT,stop='hold',wait=True):
+		self.rotate(rot=-abs(rot),speed=speed,stop=stop,wait=wait)
+	def rotate(self,speed=SPEED_DEFAULT,rot=1,stop='hold',wait=True):
+		self._rotate(speed,rot,stop,wait)
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):
 		self._run(speed,stop)
 	def stop(self):
 		self._stop()
+	def value(self):
+		return self._value()
 	def publish(self):
 		attrs=self._publish()
 		for name in attrs:
 			iot.publish(bytes("%s/%s/%s"%(iot_name,self._name,name)),bytes(attrs[name]))
 
-class NXTSensor(object):
-	__name=''
-	def __init__(self,address):
-		self.__address=address
-		with open('/sys/class/lego-sensor/'+self.__address+'/address','r') as fa:
-			self.__name=fa.read().strip().replace(':i2c1','').replace(':i2c2','').replace(':i2c3','').replace(':i2c4','').replace('\n','')
-	def set_mode(self,mode):
-		with open('/sys/class/lego-sensor/%s/mode'%(self.__address),'w') as fp:
-			fp.write(mode)
-	def value(self):
-		with open('/sys/class/lego-sensor/%s/value0'%(self.__address),'r') as fp:
-			return float(fp.read())
-	def value1(self):
-		with open('/sys/class/lego-sensor/%s/value1'%(self.__address),'r') as fp:
-			return float(fp.read())
-	def value2(self):
-		with open('/sys/class/lego-sensor/%s/value2'%(self.__address),'r') as fp:
-			return float(fp.read())
-	def publish(self):
-		with open('/sys/class/lego-sensor/%s/value0'%(self.__address),'r') as fp:
-			iot.publish(bytes("%s/%s/value"%(iot_name,self.__name)),bytes(fp.read().replace('\n','')))
 		
-class NXTColor(NXTSensor):
+class AbstrcatColorSensor(object):
 	__colors={0:'none', 1: 'black', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'red', 6: 'white', 7: 'brown'}
 	def __init__(self,address):
-		EV3Sensor.__init__(self,address)
 		self.set_mode_color()
 	def set_mode_color(self):
 		self.set_mode('COL-COLOR')
@@ -126,31 +145,6 @@ class AbstractSound(object):
 	def volume(self,volume):
 		self._volume(volume)
 			
-class NXTButton(object):
-	def __init__(self,address):
-		self.__address=address
-	def value(self):
-		pass
-
-
-class NXTLCD(object):
-	__width=178
-	__height=128
-	__bits=24
-	def __init__(self):
-		self.__buffer=[0]*self.__height*self.__bits
-		#~ self.__buffer=numpy.zeros(shape=(self.__height,self.__width),dtype=numpy.uint8)	
-	def imread(self,fname):
-		self.__buffer=Image.open(fname).convert('1')
-	def show(self):
-		with open('/dev/fb0','w+') as fp:
-			#~ fp.write(self.__buffer.tobytes("raw", "1;IR"))
-			fp.write(self.__buffer.tostring())
-		#~ fp = os.open('/dev/fb0', os.O_RDWR)
-		#~ os.write(fp,self.__buffer.tostring())#tobytes("raw", "1;IR"))
-		#~ os.close(fp)
-		#~ 
-
 class AbstractRobot(object):
 	_motors={}
 	_sensors={}
