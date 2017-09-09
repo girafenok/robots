@@ -59,7 +59,7 @@ class NXTComm(object):
 class NXTMotor(NXTComm,AbstractMotor):
 	attrs_names={'position':'rot','speed_sp':'speed','stop_action':'stop'}
 	speed_koef=100.0/1023.0
-	__stop_actions={'coast':chr(0x01),'hold':chr(0x07)}
+	__stop_actions={'coast':chr(0x01),'brake':chr(0x07),'hold':chr(0x07),'sync': chr(0x01|0x02)}
 	__stop='coast'
 	__position=0
 	__speed=0
@@ -69,19 +69,19 @@ class NXTMotor(NXTComm,AbstractMotor):
 		self._reset()
 	def _reset(self,isRelative=0):
 		self._send(chr(0x00)+chr(0x0A)+self._address+chr(isRelative))
-	def _rotate(self,speed,rot,stop,wait):
+	def _rotate(self,speed,rot,stop,async):
 		self.__position=self._value()
 		self.__stop=stop
-		self.__speed=abs(speed)*(-1,1)[speed>0]
+		self.__speed=speed
 		speed=abs(int(speed*self.speed_koef)) if rot>=0 else 255-abs(int(speed*self.speed_koef))
-		self._send(chr(0x00)+chr(0x04)+self._address+chr(speed)+self.__stop_actions[stop]+chr(0x00)+chr(0x00)+chr(0x20)+chr(0x00)+chr(0x00)+chr(0x00)+chr(0x00))
-		if wait:
+		self._send(chr(0x00)+chr(0x04) + self._address + chr(speed) + self.__stop_actions[stop] + chr(0x00) + chr(0x00) + chr(0x20) + chr(0x00) + chr(0x00) + chr(0x00) + chr(0x00))
+		if not async:
 			if rot>=0:
-				while self._value()<self.__position+abs(rot)*360-90*self.__speed*self.speed_koef/100: sleep(0.008)
+				while self._value()<self.__position+abs(rot)*360-90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
 			else:
-				while self._value()>self.__position-abs(rot)*360+90*self.__speed*self.speed_koef/100: sleep(0.008)
+				while self._value()>self.__position-abs(rot)*360+90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
 		#~ print(rot,self._value())
-		self._stop()
+			self._stop()
 	def _run(self,speed,stop='coast'):
 		self.__stop=stop
 		self.__speed=speed
@@ -90,8 +90,9 @@ class NXTMotor(NXTComm,AbstractMotor):
 		self.__position=self._value()
 	def _stop(self):
 		self.__speed=0
-		self._run(0,self.__stop)
-		self.__position=self._value()
+		self._send(chr(0x00)+chr(0x04)+self._address+chr(0)+self.__stop_actions[self.__stop]+chr(0x00)+chr(0x00)+chr(0x20)+chr(0x00)+chr(0x00)+chr(0x00)+chr(0x00)+chr(0x00))
+		#~ self._run(0,self.__stop)
+		#~ self.__position=self._value()
 	def _publish(self):
 		return {'position':self.__position,'stop':self.__stop,'speed':self.__speed}
 	def _value(self):
@@ -196,7 +197,7 @@ class NXTLCD(object):
 
 class NXTRobot(AbstractRobot):
 	_sensor_types={'':lambda a,b: None,None: lambda a,b: None,'light':lambda a,b: NXTLight(a,b),'button':lambda a,b: NXTPushButton(a,b),'ultrasonic':lambda a,b: NXTUltrasonic(a,b)}
-	def __init__(self,address,sensors=[]):
+	def __init__(self,address,sensors=[None,None,None,None]):
 		self._brick=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
 		self._brick.connect((address, 1))
 		#Motor

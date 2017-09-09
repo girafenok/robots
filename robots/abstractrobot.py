@@ -32,8 +32,9 @@ import paho.mqtt.client as mqtt
 import uuid
 #~ import subprocess
 from threading import Thread
+from time import *
 #const
-SPEED_DEFAULT=700
+SPEED_DEFAULT=512
 
 #iot mosquitto
 node="%012x"%uuid.getnode()
@@ -65,12 +66,12 @@ class AbstractMotor(object):
 		self._reset()
 	def speed(self,value):
 		self._speed=value
-	def forward(self,rot=1,stop='hold',wait=True):
-		self.rotate(rot=abs(rot),speed=self._speed,stop=stop,wait=wait)
-	def backward(self,rot=1,stop='hold',wait=True):
-		self.rotate(rot=-abs(rot),speed=self._speed,stop=stop,wait=wait)
-	def rotate(self,speed=SPEED_DEFAULT,rot=1,stop='hold',wait=True):
-		self._rotate(speed,rot,stop,wait)
+	def forward(self,rot=1,stop='hold',async=False):
+		self.rotate(rot=abs(rot),speed=self._speed,stop=stop,async=async)
+	def backward(self,rot=1,stop='hold',async=False):
+		self.rotate(rot=-abs(rot),speed=self._speed,stop=stop,async=async)
+	def rotate(self,speed=SPEED_DEFAULT,rot=1,stop='hold',async=False):
+		self._rotate(speed=speed,rot=rot,stop=stop,async=async)
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):
 		self._run(speed,stop)
 	def stop(self):
@@ -186,49 +187,29 @@ class AbstractRobot(object):
 	def speed(self,value):
 		self._speed=value
 	def forward(self,rot=1,stop='hold'):
-		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].forward(rot,stop,wait=False)
-		except:
-			pass
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].forward(rot,stop)
-		except:
-			pass
+		self._motors['outB'].speed(self._speed)
+		self._motors['outC'].speed(self._speed)
+		self._motors['outB'].forward(rot,stop,async=True)
+		self._motors['outC'].forward(rot,stop)
+		self._motors['outB'].stop()
 	def backward(self,rot=1,stop='hold'):
-		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].backward(rot,stop,wait=False)
-		except:
-			pass
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].backward(rot,stop)
-		except:
-			pass
+		self._motors['outB'].speed(self._speed)
+		self._motors['outC'].speed(self._speed)
+		self._motors['outB'].backward(rot,stop,async=True)
+		self._motors['outC'].backward(rot,stop)
+		self._motors['outB'].stop()
 	def left(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
-		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].forward(rot,stop,wait=False)
-		except:
-			pass
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].backward(rot,speed,stop)
-		except:
-			pass
+		self._motors['outB'].speed(self._speed)
+		self._motors['outC'].speed(self._speed)
+		self._motors['outC'].backward(rot,stop,async=True)
+		self._motors['outB'].forward(rot,stop)
+		self._motors['outC'].stop()
 	def right(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
-		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].backward(rot,stop,wait=False)
-		except:
-			pass
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].forward(rot,stop)
-		except:
-			pass
+		self._motors['outB'].speed(self._speed)
+		self._motors['outC'].speed(self._speed)
+		self._motors['outB'].backward(rot,stop,async=True)
+		self._motors['outC'].forward(rot,stop)
+		self._motors['outB'].stop()
 	#sensors
 	def is_object(self,distance=8):
 		try:
