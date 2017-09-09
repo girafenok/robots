@@ -60,12 +60,15 @@ class AbstractLed(object):
 class AbstractMotor(object):
 	_name=''
 	_address=''
+	_speed=SPEED_DEFAULT
 	def reset(self):
 		self._reset()
-	def forward(self,rot=1,speed=SPEED_DEFAULT,stop='hold',wait=True):
-		self.rotate(rot=abs(rot),speed=speed,stop=stop,wait=wait)
-	def backward(self,rot=1,speed=SPEED_DEFAULT,stop='hold',wait=True):
-		self.rotate(rot=-abs(rot),speed=speed,stop=stop,wait=wait)
+	def speed(self,value):
+		self._speed=value
+	def forward(self,rot=1,stop='hold',wait=True):
+		self.rotate(rot=abs(rot),speed=self._speed,stop=stop,wait=wait)
+	def backward(self,rot=1,stop='hold',wait=True):
+		self.rotate(rot=-abs(rot),speed=self._speed,stop=stop,wait=wait)
 	def rotate(self,speed=SPEED_DEFAULT,rot=1,stop='hold',wait=True):
 		self._rotate(speed,rot,stop,wait)
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):
@@ -153,6 +156,7 @@ class AbstractRobot(object):
 	_camera=None
 	_lcd=None
 	_sound=None
+	_speed=SPEED_DEFAULT
 	def motor(self,port):
 		return self._motors[port]
 	def sensor(self,port):
@@ -166,40 +170,50 @@ class AbstractRobot(object):
 	def publish(self,topic,data):
 		iot.publish(bytes("%s/%s"%(iot_name,topic)),bytes(data))
 	#move
-	def forward(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
+	def speed(self,value):
+		self._speed=value
+	def forward(self,rot=1,stop='hold'):
 		try:
-			self._motors['outB'].forward(rot,speed,stop)
+			self._motors['outB'].speed(self._speed)
+			self._motors['outB'].forward(rot,stop,wait=False)
 		except:
 			pass
 		try:
-			self._motors['outC'].forward(rot,speed,stop)
+			self._motors['outC'].speed(self._speed)
+			self._motors['outC'].forward(rot,stop)
 		except:
 			pass
-	def backward(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
+	def backward(self,rot=1,stop='hold'):
 		try:
-			self._motors['outB'].backward(rot,speed,stop)
+			self._motors['outB'].speed(self._speed)
+			self._motors['outB'].backward(rot,stop,wait=False)
 		except:
 			pass
 		try:
-			self._motors['outC'].backward(rot,speed,stop)
+			self._motors['outC'].speed(self._speed)
+			self._motors['outC'].backward(rot,stop)
 		except:
 			pass
 	def left(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
 		try:
-			self._motors['outB'].forward(rot,speed,stop)
+			self._motors['outB'].speed(self._speed)
+			self._motors['outB'].forward(rot,stop,wait=False)
 		except:
 			pass
 		try:
+			self._motors['outC'].speed(self._speed)
 			self._motors['outC'].backward(rot,speed,stop)
 		except:
 			pass
 	def right(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
 		try:
-			self._motors['outB'].backward(rot,speed,stop)
+			self._motors['outB'].speed(self._speed)
+			self._motors['outB'].backward(rot,stop,wait=False)
 		except:
 			pass
 		try:
-			self._motors['outC'].forward(rot,speed,stop)
+			self._motors['outC'].speed(self._speed)
+			self._motors['outC'].forward(rot,stop)
 		except:
 			pass
 	#sensors
