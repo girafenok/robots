@@ -56,11 +56,15 @@ class EV3Motor(AbstractMotor):
 	def _get_attribute(self,attr):
 		with open('/sys/class/tacho-motor/%s/%s'%(self._address,attr),'r') as fp:
 			return fp.read().replace('\n','')
-	def _rotate(self,speed,rot,stop,wait):
-		self._set_attributes([('position_sp',rot*360),('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-to-rel-pos')])
+	def _rotate(self,speed,rot,stop,async):
+		self._set_attributes([('position_sp',int(rot*360)),('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-to-rel-pos')])
 		start_position=int(self._get_attribute('position'))
-		if wait:
-			while int(self._get_attribute('position'))!=start_position+rot*360: pass
+		if not async:
+			if rot>=0:
+				while int(self._get_attribute('position'))<start_position+abs(rot)*360: sleep(0.008)
+			else:
+				while int(self._get_attribute('position'))>start_position-abs(rot)*360: sleep(0.008)
+			self._stop()
 	def _run(self,speed,stop):
 		self._set_attributes([('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-forever')])
 	def _stop(self):
