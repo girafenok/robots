@@ -63,7 +63,7 @@ class AbstractMotor(object):
 	_address=''
 	_speed=SPEED_DEFAULT
 	def speed(self,value):
-		self._speed=value
+		self._speed=int(value)
 	def forward(self,rot=1,stop='hold',poll=True):
 		self.rotate(rot=abs(rot),speed=self._speed,stop=stop,poll=poll)
 	def backward(self,rot=1,stop='hold',poll=True):
@@ -188,17 +188,25 @@ class AbstractRobot(object):
 		self._motors['outB'].backward(rot,stop,poll=False)
 		self._motors['outC'].backward(rot,stop)
 		self._motors['outB'].stop()
-	def left(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
+	def left(self,rot=1,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
 		self._motors['outC'].backward(rot,stop,poll=False)
 		self._motors['outB'].forward(rot,stop)
 		self._motors['outC'].stop()
-	def right(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
+	def right(self,rot=1,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
 		self._motors['outB'].backward(rot,stop,poll=False)
 		self._motors['outC'].forward(rot,stop)
+		self._motors['outB'].stop()
+	def roundLeft(self,rot=1,twist=0.5,stop='hold'):
+		self._motors['outC'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
+		self._motors['outB'].rotate(rot=rot,speed=self._speed,stop=stop)
+		self._motors['outC'].stop()
+	def roundRight(self,rot=1,twist=0.5,stop='hold'):
+		self._motors['outB'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
+		self._motors['outC'].rotate(rot=rot,speed=self._speed,stop=stop)
 		self._motors['outB'].stop()
 	#sensors
 	def is_object(self,distance=8):
