@@ -62,29 +62,19 @@ class AbstractMotor(object):
 	_name=''
 	_address=''
 	_speed=SPEED_DEFAULT
-	def reset(self):
-		self._reset()
 	def speed(self,value):
 		self._speed=value
-	def forward(self,rot=1,stop='hold',async=False):
-		self.rotate(rot=abs(rot),speed=self._speed,stop=stop,async=async)
-	def backward(self,rot=1,stop='hold',async=False):
-		self.rotate(rot=-abs(rot),speed=self._speed,stop=stop,async=async)
-	def rotate(self,speed=SPEED_DEFAULT,rot=1,stop='hold',async=False):
-		self._rotate(speed=speed,rot=rot,stop=stop,async=async)
-	def run(self,speed=SPEED_DEFAULT,stop='coast'):
-		self._run(speed,stop)
-	def stop(self):
-		self._stop()
-	def value(self):
-		return self._value()
+	def forward(self,rot=1,stop='hold',poll=True):
+		self.rotate(rot=abs(rot),speed=self._speed,stop=stop,poll=poll)
+	def backward(self,rot=1,stop='hold',poll=True):
+		self.rotate(rot=-abs(rot),speed=self._speed,stop=stop,poll=poll)
 	def publish(self):
 		attrs=self._publish()
 		for name in attrs:
 			iot.publish(bytes("%s/%s/%s"%(iot_name,self._name,name)),bytes(attrs[name]))
 
 		
-class AbstrcatColorSensor(object):
+class AbstractColorSensor(object):
 	__colors={0:'none', 1: 'black', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'red', 6: 'white', 7: 'brown'}
 	def __init__(self,address):
 		self.set_mode_color()
@@ -120,18 +110,18 @@ class AbstractSound(object):
 		'A#': [29.13,  58.26,  116.54, 233,     466.16, 932.32, 1864.6, 3729.2, 7458.4],
 		'B': [30.87,  61,     123.48, 247,     493,    987.75, 1975.5, 3951,   7902]
 	}	
-	def play(self,fname,async=False):
-		if async:
+	def play(self,fname,poll=True):
+		if not poll:
 			Thread(target=self._play, args=(fname,)).start()
 		else:
 			self._play(fname)
-	def tone(self,tone,time,async=False):
-		if async:
+	def tone(self,tone,time,poll=True):
+		if not poll:
 			Thread(target=self.__tones, args=([(tone,time)],)).start()
 		else:
 			self.__tones([(tone,time)])
-	def tones(self,tones,async=False):
-		if async:
+	def tones(self,tones,poll=True):
+		if not poll:
 			Thread(target=self.__tones, args=(tones,)).start()
 		else:
 			self.__tones(tones)
@@ -141,8 +131,8 @@ class AbstractSound(object):
 			self._tone(freq,tone[1])
 	def beep(self):
 		self._tone(440,250)
-	def say(self,msg,speed=175,bass=100,async=False):
-		if async:
+	def say(self,msg,speed=175,bass=100,poll=True):
+		if not poll:
 			Thread(target=self._say, args=(msg,speed,bass,)).start()
 		else:
 			self._say(msg,speed,bass)
@@ -173,14 +163,14 @@ class AbstractRobot(object):
 	#sound
 	def beep(self):
 		self._sound.beep()
-	def tone(self,tone,time,async=False):
-		self._sound.tone(tone,time,async)
-	def tones(self,tones,async=False):
-		self._sound.tones(tones,async)
-	def play(self,fname,async=False):
-		self._sound.play(fname,async)
-	def say(self,msg,speed=175,bass=100,async=False):
-		self._sound.say(msg,speed,bass,async)
+	def tone(self,tone,time,poll=True):
+		self._sound.tone(tone,time,poll)
+	def tones(self,tones,poll=True):
+		self._sound.tones(tones,poll)
+	def play(self,fname,poll=True):
+		self._sound.play(fname,poll)
+	def say(self,msg,speed=175,bass=100,poll=True):
+		self._sound.say(msg,speed,bass,poll)
 	def volume(self,vol):
 		self._sound.volume(vol)
 	#move
@@ -189,25 +179,25 @@ class AbstractRobot(object):
 	def forward(self,rot=1,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
-		self._motors['outB'].forward(rot,stop,async=True)
+		self._motors['outB'].forward(rot,stop,poll=False)
 		self._motors['outC'].forward(rot,stop)
 		self._motors['outB'].stop()
 	def backward(self,rot=1,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
-		self._motors['outB'].backward(rot,stop,async=True)
+		self._motors['outB'].backward(rot,stop,poll=False)
 		self._motors['outC'].backward(rot,stop)
 		self._motors['outB'].stop()
 	def left(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
-		self._motors['outC'].backward(rot,stop,async=True)
+		self._motors['outC'].backward(rot,stop,poll=False)
 		self._motors['outB'].forward(rot,stop)
 		self._motors['outC'].stop()
 	def right(self,rot=1,speed=SPEED_DEFAULT,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
-		self._motors['outB'].backward(rot,stop,async=True)
+		self._motors['outB'].backward(rot,stop,poll=False)
 		self._motors['outC'].forward(rot,stop)
 		self._motors['outB'].stop()
 	#sensors

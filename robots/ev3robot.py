@@ -46,8 +46,8 @@ class EV3Motor(AbstractMotor):
 		self._address=address
 		with open('/sys/class/tacho-motor/'+self._address+'/address','r') as fp:
 			self._name=fp.read().replace('\n','')
-		self._reset()
-	def _reset(self):
+		self.reset()
+	def reset(self):
 		self._set_attributes([('command','reset')])
 	def _set_attributes(self,attributes):
 		for attr in attributes:
@@ -56,20 +56,20 @@ class EV3Motor(AbstractMotor):
 	def _get_attribute(self,attr):
 		with open('/sys/class/tacho-motor/%s/%s'%(self._address,attr),'r') as fp:
 			return fp.read().replace('\n','')
-	def _rotate(self,speed,rot,stop,async):
+	def rotate(self,speed=SPEED_DEFAULT,rot=1,stop='hold',poll=True):
 		self._set_attributes([('position_sp',int(rot*360)),('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-to-rel-pos')])
 		start_position=int(self._get_attribute('position'))
-		if not async:
+		if poll:
 			if rot>=0:
 				while int(self._get_attribute('position'))<start_position+abs(rot)*360: sleep(0.008)
 			else:
 				while int(self._get_attribute('position'))>start_position-abs(rot)*360: sleep(0.008)
-			self._stop()
-	def _run(self,speed,stop):
+			self.stop()
+	def run(self,speed=SPEED_DEFAULT,stop='coast'):
 		self._set_attributes([('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-forever')])
-	def _stop(self):
+	def stop(self):
 		self._set_attributes([('command','stop')])
-	def _value(self):
+	def value(self):
 		int(self._get_attribute('position'))
 	def _publish(self):
 		attrs={}
@@ -152,7 +152,7 @@ class EV3Sound(AbstractSound):
 		os.system('espeak -a %s -s %s "%s" --stdout | aplay -q'%(bass,speed,msg))
 	def _volume(self,volume):
 		with open('/sys/devices/platform/snd-legoev3/volume','w') as fp:
-			fp.write(str(volume))
+			fp.write(str(volume)) #max 100
 			
 class EV3Button(object):
 	def __init__(self,address):

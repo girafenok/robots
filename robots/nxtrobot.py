@@ -66,40 +66,39 @@ class NXTMotor(NXTComm,AbstractMotor):
 	def __init__(self,address,brick):
 		NXTComm.__init__(self,brick)
 		self._address=chr(address)
-		self._reset()
-	def _reset(self,isRelative=0):
+		self.reset()
+	def reset(self,isRelative=0):
 		self._send(chr(0x00)+chr(0x0A)+self._address+chr(isRelative))
-	def _rotate(self,speed,rot,stop,async):
-		self.__position=self._value()
+	def rotate(self,speed=SPEED_DEFAULT,rot=1,stop='hold',poll=True):
+		self.__position=self.value()
 		self.__stop=stop
 		self.__speed=speed
 		speed=abs(int(speed*self.speed_koef)) if rot>=0 else 255-abs(int(speed*self.speed_koef))
 		self._send(chr(0x00)+chr(0x04) + self._address + chr(speed) + self.__stop_actions[stop] + chr(0x00) + chr(0x00) + chr(0x20) + chr(0x00) + chr(0x00) + chr(0x00) + chr(0x00))
-		if not async:
+		if poll:
 			if rot>=0:
-				while self._value()<self.__position+abs(rot)*360-90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
+				while self.value()<self.__position+abs(rot)*360-90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
 			else:
-				while self._value()>self.__position-abs(rot)*360+90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
+				while self.value()>self.__position-abs(rot)*360+90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
 		#~ print(rot,self._value())
-			self._stop()
-	def _run(self,speed,stop='coast'):
+			self.stop()
+	def run(self,speed=SPEED_DEFAULT,stop='coast'):
 		self.__stop=stop
 		self.__speed=speed
 		speed=int(speed*self.speed_koef) if speed>=0 else 255-abs(int(speed*self.speed_koef))
 		self._send(chr(0x00)+chr(0x04)+self._address+chr(speed)+self.__stop_actions[stop]+chr(0x00)+chr(0x00)+chr(0x20)+chr(0x00)+chr(0x00)+chr(0x00)+chr(0x00)+chr(0x00))
-		self.__position=self._value()
-	def _stop(self):
+		self.__position=self.value()
+	def stop(self):
 		self.__speed=0
 		self._send(chr(0x00)+chr(0x04)+self._address+chr(0)+self.__stop_actions[self.__stop]+chr(0x00)+chr(0x00)+chr(0x20)+chr(0x00)+chr(0x00)+chr(0x00)+chr(0x00)+chr(0x00))
 		#~ self._run(0,self.__stop)
 		#~ self.__position=self._value()
-	def _publish(self):
-		return {'position':self.__position,'stop':self.__stop,'speed':self.__speed}
-	def _value(self):
+	def value(self):
 		state=self._send(chr(0x00)+chr(0x06)+self._address)
 		value=sum(ord(state[i+21])*256**i for i in range(4))
 		return value if value<2**31 else -2**32+value
-		
+	def _publish(self):
+		return {'position':self.__position,'stop':self.__stop,'speed':self.__speed}
 		
 		
 
@@ -161,9 +160,9 @@ class NXTSound(NXTComm,AbstractSound):
 		NXTComm.__init__(self,brick)
 	def _play(self,fname):
 		self._send(chr(0x00)+chr(0x02)+chr(0x00)+fname+'.rso'+chr(0x00))
-	def _tone(self,tone,time):
- 		self._send(chr(0x00)+chr(0x03)+chr(int(tone)%256)+chr(int(tone)//256)+chr(int(time)%256)+chr(int(time)//256))
-		sleep(time/1000.0)
+	def _tone(self,tone,time_ms):
+ 		self._send(chr(0x00)+chr(0x03)+chr(int(tone)%256)+chr(int(tone)//256)+chr(int(time_ms)%256)+chr(int(time_ms)//256))
+ 		sleep(time_ms/1000.0)
 		self._send(chr(0x00)+chr(0x03)+chr(0)+chr(0)+chr(0)+chr(0))
 	def _say(self,msg,speed=175,bass=100):
 		pass
