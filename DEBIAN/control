@@ -1,0 +1,10 @@
+Package: gabbler.edu.robots
+Priority: extra
+Section: science
+Maintainer: girafenok <girafenok@gabbler.ru>
+Architecture: all
+Version: 0.5
+Depends: python
+Provides: gabbler.edu.robots
+Description: Module for Lego Mindstorms NXT, EV3 and others.
+Origin: http://edu.gabbler.ru
