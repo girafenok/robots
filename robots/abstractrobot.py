@@ -148,6 +148,16 @@ class AbstractRobot(object):
 	_lcd=None
 	_sound=None
 	_speed=SPEED_DEFAULT
+	__help="""Основные команды:
+robo.forward() - вперед на один поворот колеса
+robo.forward(6) - вперед на 6 поворотов колеса
+robo.backward() - назад на один поворот колеса
+robo.backward(6) - назад на 6 поворотов колеса
+robo.left() - повернуться налево на один поворот колеса
+robo.left(3) - повернуться налево на три поворота колеса
+robo.right()  - повернуться направо на один поворот колеса
+robo.right(3)  - повернуться направо на три поворота колеса
+"""
 	def motor(self,port):
 		return self._motors[port]
 	def sensor(self,port):
@@ -160,6 +170,11 @@ class AbstractRobot(object):
 		return self._sound
 	def publish(self,topic,data):
 		iot.publish(bytes("%s/%s"%(iot_name,topic)),bytes(data))
+	#
+	def help(self):
+		print(self.__help))
+	def done():
+		pass
 	#sound
 	def beep(self):
 		self._sound.beep()
