@@ -148,7 +148,7 @@ class AbstractRobot(object):
 	_lcd=None
 	_sound=None
 	_speed=SPEED_DEFAULT
-	__help="""Основные команды:
+	__help={'ru':"""Основные команды:
 robo.forward() - вперед на один поворот колеса
 robo.forward(6) - вперед на 6 поворотов колеса
 robo.backward() - назад на один поворот колеса
@@ -157,7 +157,12 @@ robo.left() - повернуться налево на один поворот �
 robo.left(3) - повернуться налево на три поворота колеса
 robo.right()  - повернуться направо на один поворот колеса
 robo.right(3)  - повернуться направо на три поворота колеса
+robo.roundLeft(3,0.5) - плавно повернуться налево на три поворота колеса
+robo.roundRight(3,0.5)  - плавно повернуться направо на три поворота колеса
+""",
+'en':"""
 """
+}
 	def motor(self,port):
 		return self._motors[port]
 	def sensor(self,port):
@@ -172,8 +177,8 @@ robo.right(3)  - повернуться направо на три поворо�
 		iot.publish(bytes("%s/%s"%(iot_name,topic)),bytes(data))
 	#
 	def help(self):
-		print(self.__help))
-	def done():
+		print(self.__help['ru'])
+	def done(self):
 		pass
 	#sound
 	def beep(self):
@@ -223,14 +228,21 @@ robo.right(3)  - повернуться направо на три поворо�
 		self._motors['outB'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
 		self._motors['outC'].rotate(rot=rot,speed=self._speed,stop=stop)
 		self._motors['outB'].stop()
+	def run(self,speed=SPEED_DEFAULT,stop='coast'):
+		self._motors['outB'].run(speed,stop)
+		self._motors['outC'].run(speed,stop)
 	#sensors
 	def is_object(self,distance=8):
-		try:
-			res=self._sensors['in1'].value()<distance
-		except:
-			res=False
-		return res
+		return self._sensors['in1'].value()<distance
 	def is_wall(self,distance=8):
+		self.is_object(distance)
+	def is_wall_forward(self,distance=8):
+		self.is_object(distance)
+	def is_wall_backward(self,distance=8):
+		self.is_object(distance)
+	def is_wall_left(self,distance=8):
+		self.is_object(distance)
+	def is_wall_right(self,distance=8):
 		self.is_object(distance)
 	def is_color(self,color=6):
 		pass
