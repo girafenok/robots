@@ -7,3 +7,4 @@ kuznechik=(("F4",250),("C4",250),("F4",250),("C4",250),("F4",250),("E4",250),("E
 
 robo=EV3Robot()
 robo.tones(kuznechik)
+robo.done()

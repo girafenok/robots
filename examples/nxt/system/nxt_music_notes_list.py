@@ -7,3 +7,4 @@ kuznechik=(("F4",250),("C4",250),("F4",250),("C4",250),("F4",250),("E4",250),("E
 
 robo=NXTRobot("00:16:53:0E:B5:80")#NXT ID <- Settings - NXT Version
 robo.tones(kuznechik)
+robo.done()

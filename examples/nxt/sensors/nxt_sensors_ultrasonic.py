@@ -28,3 +28,4 @@ robo=NXTRobot("00:16:53:0E:B5:80",sensors=('ultrasonic',None,None,None))#NXT ID 
 while True:
 	print("distance: %i"%robo.sensor('in1').value())
 	sleep(1)
+robo.done()

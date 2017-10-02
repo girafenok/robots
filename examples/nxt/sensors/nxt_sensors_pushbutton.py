@@ -32,3 +32,4 @@ while True:
 		print("Button press %i"%i)
 		i+=1
 	sleep(0.2)
+robo.done()

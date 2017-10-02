@@ -6,3 +6,4 @@ from ev3robot import *
 robo=EV3Robot()
 robo.motor('outA').rotate(rot=2,speed=800)
 robo.motor('outA').rotate(rot=-1,speed=800)
+robo.done()

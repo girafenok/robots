@@ -24,7 +24,7 @@ robo=EV3Robot()
 	#~ elif robo.sensor('in1').value()==7: #brown
 		#~ robo.sound().say('brown')
 	#~ sleep(1)
-
+#~ robo.done()
 #Second variant
 while True:
 	if robo.sensor('in1').color()=='none': #no color
@@ -44,3 +44,4 @@ while True:
 	elif robo.sensor('in1').color()=='brown': #brown
 		robo.sound().say('brown')
 	sleep(1)
+robo.done()

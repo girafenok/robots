@@ -9,4 +9,4 @@ from ev3robot import *
 robo=EV3Robot()
 robo.forward(1)
 robo.backward(1)
-
+robo.done()

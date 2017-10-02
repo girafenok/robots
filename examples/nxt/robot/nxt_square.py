@@ -10,4 +10,5 @@ from time import sleep
 robo=NXTRobot("00:16:53:0E:B5:80")#NXT ID <- Settings - NXT Version
 for i in range(4):
 	robo.forward(1)
-	robo.left(0.7)
+	robo.left(0.63)
+robo.done()

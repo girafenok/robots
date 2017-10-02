@@ -41,3 +41,5 @@ robo.tones(pinkpanther)
 sleep(2)
 
 robo.tones(crazyfrog)
+
+robo.done()

@@ -13,3 +13,4 @@ while True:
 	robo.led('right:red').brightness(light/100*255)
 	robo.led('right:green').brightness(0)
 	sleep(0.2)
+robo.done()

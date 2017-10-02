@@ -11,3 +11,4 @@ robo=EV3Robot()#NXT ID <- Settings - NXT Version
 for i in range(4):
 	robo.roundLeft(1,0.5)
 	robo.roundRight(1,0.5)
+robo.done()

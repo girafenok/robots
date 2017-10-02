@@ -10,3 +10,4 @@ robo=EV3Robot()
 for i in range(4):
 	robo.forward(1)
 	robo.left(0.5)
+robo.done()

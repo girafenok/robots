@@ -7,3 +7,4 @@ robo=NXTRobot("00:16:53:0E:B5:80",sensors=('light',None,None,None))#NXT ID <- Se
 while True:
 	print("light: %i"%robo.sensor('in1').value())
 	sleep(1)
+robo.done()
