@@ -81,7 +81,7 @@ class NXTMotor(NXTComm,AbstractMotor):
 			else:
 				while self.value()>self.__position-abs(rot)*360+90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
 		#~ print(rot,self._value())
-			self.stop()
+			#~ self.stop()
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):
 		self.__stop=stop
 		self.__speed=speed
@@ -113,16 +113,16 @@ class NXTSensor(NXTComm):
 		state=self._send(chr(0x00)+chr(0x07)+self.__address)
 		return ord(state[13])*256+ord(state[12])
 	def publish(self):
-		iot.publish(bytes("%s/%s/value"%(iot_name,self._name)),bytes(self.value()))
+		iot.publish(bytes("%s/%s/value"%(iot_name,self.__name)),bytes(self.value()))
 		
 class NXTPushButton(NXTSensor):
-	_name='button'
+	__name='button'
 	def __init__(self,address,brick):
 		NXTSensor.__init__(self,address,brick)
 		self.set_mode(0x01,0x20)
 	
 class NXTLight(NXTSensor):
-	_name='light'
+	__name='light'
 	def __init__(self,address,brick):
 		NXTSensor.__init__(self,address,brick)
 		self.set_mode(0x05)
@@ -130,7 +130,7 @@ class NXTLight(NXTSensor):
 		self.set_mode(0x05 if ref else 0x06)
 	
 class NXTColor(NXTSensor):
-	_name='color'
+	__name='color'
 	__colors={0:'none', 1: 'black', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'red', 6: 'white', 7: 'brown'}
 	def __init__(self,address):
 		NXTSensor.__init__(self,address)
@@ -149,11 +149,18 @@ class NXTColor(NXTSensor):
 		return (self.value(),self.value1(),self.value2())
 
 class NXTUltrasonic(NXTSensor):
-	_name='ultrasonic'
+	__name='ultrasonic'
 	def __init__(self,address,brick):
+		self.__address=chr(address)
 		NXTSensor.__init__(self,address,brick)
-		self.set_mode(0x0B,0x00)
-
+		self.set_mode(0x0B)#,0x00
+	def value(self):
+		state=self._send(chr(0x00)+chr(0x0F)+self.__address+chr(0x03) + chr(0x00) + chr(0x02) + chr(0x41) + chr(0x02))
+		isReady=0
+		while isReady==0:
+			isReady=self._send(chr(0x00)+chr(0x0F)+self.__address+chr(0x02) + chr(0x01) + chr(0x02) + chr(0x42))
+		state=self._send(chr(0x00)+chr(0x10)+self.__address)
+		return sum(ord(state[i+4])*256**i for i in range(ord(state[3])))
 class NXTSound(NXTComm,AbstractSound):
 	def __init__(self,brick):
 		AbstractSound.__init__(self)

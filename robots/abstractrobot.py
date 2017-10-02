@@ -35,6 +35,7 @@ from threading import Thread
 from time import *
 #const
 SPEED_DEFAULT=512
+SPEED_MAX=1023
 
 #iot mosquitto
 node="%012x"%uuid.getnode()
@@ -199,38 +200,102 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 	def forward(self,rot=1,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
-		self._motors['outB'].forward(rot,stop,poll=False)
-		self._motors['outC'].forward(rot,stop)
-		self._motors['outB'].stop()
+		try:
+			self._motors['outB'].forward(rot,stop,poll=False)
+		except:
+			pass
+		try:
+			self._motors['outC'].forward(rot,stop)
+			self._motors['outB'].stop()
+		except:
+			pass
 	def backward(self,rot=1,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
-		self._motors['outB'].backward(rot,stop,poll=False)
-		self._motors['outC'].backward(rot,stop)
-		self._motors['outB'].stop()
+		try:
+			self._motors['outB'].backward(rot,stop,poll=False)
+		except:
+			pass
+		try:
+			self._motors['outC'].backward(rot,stop)
+			self._motors['outB'].stop()
+		except:
+			pass
 	def left(self,rot=1,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
-		self._motors['outC'].backward(rot,stop,poll=False)
-		self._motors['outB'].forward(rot,stop)
-		self._motors['outC'].stop()
+		try:
+			self._motors['outC'].backward(rot,stop,poll=False)
+		except:
+			pass
+		try:
+			self._motors['outB'].forward(rot,stop)
+			self._motors['outC'].stop()
+		except:
+			pass
 	def right(self,rot=1,stop='hold'):
 		self._motors['outB'].speed(self._speed)
 		self._motors['outC'].speed(self._speed)
-		self._motors['outB'].backward(rot,stop,poll=False)
-		self._motors['outC'].forward(rot,stop)
-		self._motors['outB'].stop()
+		try:
+			self._motors['outB'].backward(rot,stop,poll=False)
+		except:
+			pass
+		try:
+			self._motors['outC'].forward(rot,stop)
+			self._motors['outB'].stop()
+		except:
+			pass
 	def roundLeft(self,rot=1,twist=0.5,stop='hold'):
-		self._motors['outC'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
-		self._motors['outB'].rotate(rot=rot,speed=self._speed,stop=stop)
-		self._motors['outC'].stop()
+		self._motors['outB'].speed(self._speed)
+		self._motors['outC'].speed(self._speed)
+		try:
+			self._motors['outC'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
+		except:
+			pass
+		try:
+			self._motors['outB'].rotate(rot=rot,speed=self._speed,stop=stop)
+			self._motors['outC'].stop()
+		except:
+			pass
 	def roundRight(self,rot=1,twist=0.5,stop='hold'):
-		self._motors['outB'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
-		self._motors['outC'].rotate(rot=rot,speed=self._speed,stop=stop)
-		self._motors['outB'].stop()
+		self._motors['outB'].speed(self._speed)
+		self._motors['outC'].speed(self._speed)
+		try:
+			self._motors['outB'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
+		except:
+			pass
+		try:
+			self._motors['outC'].rotate(rot=rot,speed=self._speed,stop=stop)
+			self._motors['outB'].stop()
+		except:
+			pass
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):
-		self._motors['outB'].run(speed,stop)
-		self._motors['outC'].run(speed,stop)
+		try:
+			self._motors['outB'].run(speed,stop)
+		except:
+			pass
+		try:
+			self._motors['outC'].run(speed,stop)
+		except:
+			pass
+	def stop(self):
+		try:
+			self._motors['outB'].stop()
+		except:
+			pass
+		try:
+			self._motors['outC'].stop()
+		except:
+			pass
+	#object
+	def penup(self,rot=0.125):
+		self._motors['outA'].rotate(rot=-abs(rot),speed=self._speed//2,stop='hold',poll=True)
+	def pendown(self,rot=0.125):
+		self._motors['outA'].rotate(rot=abs(rot),speed=self._speed//2,stop='hold',poll=True)
+	def grab(self,rot=1):
+		self._motors['outA'].rotate(rot=-abs(rot),speed=self._speed//2,stop='hold',poll=True)
+	def put(self,rot=1):
+		self._motors['outA'].rotate(rot=abs(rot),speed=self._speed//2,stop='hold',poll=True)
 	#sensors
 	def is_object(self,distance=8):
 		return self._sensors['in1'].value()<distance
