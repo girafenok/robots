@@ -180,7 +180,22 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 	def help(self):
 		print(self.__help['ru'])
 	def done(self):
-		pass
+		try:
+			self._motors['outA'].stop()
+		except:
+			pass
+		try:
+			self._motors['outB'].stop()
+		except:
+			pass
+		try:
+			self._motors['outC'].stop()
+		except:
+			pass
+		try:
+			self._motors['outD'].stop()
+		except:
+			pass
 	#sound
 	def beep(self):
 		self._sound.beep()
@@ -206,7 +221,7 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 			pass
 		try:
 			self._motors['outC'].forward(rot,stop)
-			self._motors['outB'].stop()
+			#~ self._motors['outB'].stop()
 		except:
 			pass
 	def backward(self,rot=1,stop='hold'):
@@ -218,7 +233,7 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 			pass
 		try:
 			self._motors['outC'].backward(rot,stop)
-			self._motors['outB'].stop()
+			#~ self._motors['outB'].stop()
 		except:
 			pass
 	def left(self,rot=1,stop='hold'):
@@ -230,7 +245,7 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 			pass
 		try:
 			self._motors['outB'].forward(rot,stop)
-			self._motors['outC'].stop()
+			#~ self._motors['outC'].stop()
 		except:
 			pass
 	def right(self,rot=1,stop='hold'):
@@ -242,7 +257,7 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 			pass
 		try:
 			self._motors['outC'].forward(rot,stop)
-			self._motors['outB'].stop()
+			#~ self._motors['outB'].stop()
 		except:
 			pass
 	def roundLeft(self,rot=1,twist=0.5,stop='hold'):
@@ -254,7 +269,7 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 			pass
 		try:
 			self._motors['outB'].rotate(rot=rot,speed=self._speed,stop=stop)
-			self._motors['outC'].stop()
+			#~ self._motors['outC'].stop()
 		except:
 			pass
 	def roundRight(self,rot=1,twist=0.5,stop='hold'):
@@ -266,7 +281,7 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 			pass
 		try:
 			self._motors['outC'].rotate(rot=rot,speed=self._speed,stop=stop)
-			self._motors['outB'].stop()
+			#~ self._motors['outB'].stop()
 		except:
 			pass
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):
