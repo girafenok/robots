@@ -22,23 +22,11 @@
 #  
 #  
 
-import os,stat
+import os
 from time import *
 from PIL import Image
-import paho.mqtt.client as mqtt
-import uuid
-#~ import subprocess
-from threading import Thread
 from abstractrobot import *
 
-#iot mosquitto
-#~ node="%012x"%uuid.getnode()
-#~ iot_name="ev3-%s"%node[2:]
-#~ iot=mqtt.Client(iot_name)
-#~ try:
-	#~ iot.connect("ev3dev.gabbler.ru", 1977)
-#~ except:
-	#~ pass
 class EV3Motor(AbstractMotor):
 	attrs_names={'position':'rot','speed_sp':'speed','stop_action':'stop'}
 	speed_koef=1050.0/1023.0
@@ -61,10 +49,9 @@ class EV3Motor(AbstractMotor):
 		start_position=int(self._get_attribute('position'))
 		if poll:
 			if rot>=0:
-				while int(self._get_attribute('position'))<start_position+abs(rot)*360: sleep(0.008)
+				while int(self._get_attribute('position'))<start_position+abs(rot)*360: sleep(0.001)
 			else:
-				while int(self._get_attribute('position'))>start_position-abs(rot)*360: sleep(0.008)
-			self.stop()
+				while int(self._get_attribute('position'))>start_position-abs(rot)*360: sleep(0.001)
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):
 		self._set_attributes([('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-forever')])
 	def stop(self):

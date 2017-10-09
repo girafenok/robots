@@ -26,11 +26,7 @@
 
 
 import os
-#from time import *
-#~ from PIL import Image
-import paho.mqtt.client as mqtt
 import uuid
-#~ import subprocess
 from threading import Thread
 from time import *
 #const
@@ -40,8 +36,9 @@ SPEED_MAX=1023
 #iot mosquitto
 node="%012x"%uuid.getnode()
 iot_name="robo-%s"%node[2:]
-iot=mqtt.Client(iot_name)
 try:
+	import paho.mqtt.client as mqtt
+	iot=mqtt.Client(iot_name)
 	iot.connect("ev3dev.gabbler.ru", 1977)
 except:
 	print('No connection to mqtt server')
@@ -213,75 +210,69 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 	def speed(self,value):
 		self._speed=value
 	def forward(self,rot=1,stop='hold'):
-		self._motors['outB'].speed(self._speed)
-		self._motors['outC'].speed(self._speed)
 		try:
+			self._motors['outB'].speed(self._speed)
 			self._motors['outB'].forward(rot,stop,poll=False)
 		except:
 			pass
 		try:
+			self._motors['outC'].speed(self._speed)
 			self._motors['outC'].forward(rot,stop)
-			#~ self._motors['outB'].stop()
 		except:
 			pass
 	def backward(self,rot=1,stop='hold'):
-		self._motors['outB'].speed(self._speed)
-		self._motors['outC'].speed(self._speed)
 		try:
+			self._motors['outB'].speed(self._speed)
 			self._motors['outB'].backward(rot,stop,poll=False)
 		except:
 			pass
 		try:
+			self._motors['outC'].speed(self._speed)
 			self._motors['outC'].backward(rot,stop)
-			#~ self._motors['outB'].stop()
 		except:
 			pass
 	def left(self,rot=1,stop='hold'):
-		self._motors['outB'].speed(self._speed)
-		self._motors['outC'].speed(self._speed)
 		try:
+			self._motors['outC'].speed(self._speed)
 			self._motors['outC'].backward(rot,stop,poll=False)
 		except:
 			pass
 		try:
+			self._motors['outB'].speed(self._speed)
 			self._motors['outB'].forward(rot,stop)
-			#~ self._motors['outC'].stop()
 		except:
 			pass
 	def right(self,rot=1,stop='hold'):
-		self._motors['outB'].speed(self._speed)
-		self._motors['outC'].speed(self._speed)
 		try:
+			self._motors['outB'].speed(self._speed)
 			self._motors['outB'].backward(rot,stop,poll=False)
 		except:
 			pass
 		try:
+			self._motors['outC'].speed(self._speed)
 			self._motors['outC'].forward(rot,stop)
-			#~ self._motors['outB'].stop()
 		except:
 			pass
 	def roundLeft(self,rot=1,twist=0.5,stop='hold'):
-		self._motors['outB'].speed(self._speed)
-		self._motors['outC'].speed(self._speed)
 		try:
+			self._motors['outC'].speed(self._speed)
 			self._motors['outC'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
 		except:
 			pass
 		try:
+			self._motors['outB'].speed(self._speed)
 			self._motors['outB'].rotate(rot=rot,speed=self._speed,stop=stop)
-			#~ self._motors['outC'].stop()
 		except:
 			pass
 	def roundRight(self,rot=1,twist=0.5,stop='hold'):
-		self._motors['outB'].speed(self._speed)
-		self._motors['outC'].speed(self._speed)
 		try:
+			self._motors['outB'].speed(self._speed)
 			self._motors['outB'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
 		except:
 			pass
 		try:
+			self._motors['outC'].speed(self._speed)
 			self._motors['outC'].rotate(rot=rot,speed=self._speed,stop=stop)
-			#~ self._motors['outB'].stop()
 		except:
 			pass
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):

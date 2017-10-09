@@ -80,8 +80,6 @@ class NXTMotor(NXTComm,AbstractMotor):
 				while self.value()<self.__position+abs(rot)*360-90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
 			else:
 				while self.value()>self.__position-abs(rot)*360+90*self.__speed*self.speed_koef/100: sleep(0.008) #-90*self.__speed*self.speed_koef/100
-		#~ print(rot,self._value())
-			#~ self.stop()
 	def run(self,speed=SPEED_DEFAULT,stop='coast'):
 		self.__stop=stop
 		self.__speed=speed
@@ -203,7 +201,7 @@ class NXTLCD(object):
 
 class NXTRobot(AbstractRobot):
 	_sensor_types={'':lambda a,b: None,None: lambda a,b: None,'light':lambda a,b: NXTLight(a,b),'button':lambda a,b: NXTPushButton(a,b),'ultrasonic':lambda a,b: NXTUltrasonic(a,b)}
-	def __init__(self,address,sensors=[None,None,None,None]):
+	def __init__(self,address,sensors=('ultrasonic',None,'button',None)):
 		self._brick=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
 		self._brick.connect((address, 1))
 		#Motor
