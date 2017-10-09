@@ -3,8 +3,8 @@ Priority: extra
 Section: science
 Maintainer: girafenok <girafenok@gabbler.ru>
 Architecture: all
-Version: 0.6
-Depends: python
+Version: 0.62
+Depends: python,python-pip,python-imaging
 Provides: gabbler.edu.robots
 Description: Module for Lego Mindstorms NXT, EV3 and others.
 Origin: http://edu.gabbler.ru
