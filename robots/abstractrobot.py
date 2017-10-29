@@ -43,6 +43,12 @@ try:
 except:
 	print('No connection to mqtt server')
 
+try:
+	import cv2
+except:
+	pass
+
+
 class AbstractLed(object):
 	def __init__(self,address):
 		self.__address=address
@@ -53,7 +59,32 @@ class AbstractLed(object):
 		with open('/sys/class/leds/%s/brightness'%(self.__address),'w') as fp:
 			fp.write(str(int(value)))
 
-
+class AbstractCamera(object):
+	camera=None
+	def __init__(self,address):
+		self.__address=address
+		try:
+			self.__camera=cv2.VideoCapture(self.__address)
+			self.FPS_CAM=cv2.cv.CV_CAP_PROP_FPS
+			#~ capture.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH ,640)
+			#~ capture.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT ,480)
+		except:
+			print('Camera error')
+		self.__capture_time=0
+	def capture(self,skip=True):
+		if self.__camera!=None:
+			if self.__capture_time!=0 and skip:
+				for i in range(int(time()-self.__capture_time)*robo.camera().FPS_CAM-1): self.__camera.grab()
+			self.__capture_time=time()
+			return self.__camera.read()[1]
+	def save(self,fname='capture.png',skip=True):
+		if self.__camera!=None:
+			if self.__capture_time!=0 and skip:
+				for i in range(int(time()-self.__capture_time)*self.FPS_CAM-1): self.__camera.grab()
+			self.__capture_time=time()
+			cv2.imwrite(fname,self.__camera.read()[1]) 
+	def publish(self):
+		pass
 
 
 class AbstractMotor(object):
@@ -62,15 +93,16 @@ class AbstractMotor(object):
 	_speed=SPEED_DEFAULT
 	def speed(self,value):
 		self._speed=int(value)
-	def forward(self,rot=1,stop='hold',poll=True):
-		self.rotate(rot=abs(rot),speed=self._speed,stop=stop,poll=poll)
-	def backward(self,rot=1,stop='hold',poll=True):
-		self.rotate(rot=-abs(rot),speed=self._speed,stop=stop,poll=poll)
+	def forward(self,rot=1):
+		self.rotate(rot=abs(rot),speed=abs(self._speed))
+	def backward(self,rot=1):
+		self.rotate(rot=-abs(rot),speed=abs(self._speed))
+	def run(self,speed):
+		self.rotate(rot=0,speed=speed)
 	def publish(self):
 		attrs=self._publish()
 		for name in attrs:
 			iot.publish(bytes("%s/%s/%s"%(iot_name,self._name,name)),bytes(attrs[name]))
-
 		
 class AbstractColorSensor(object):
 	__colors={0:'none', 1: 'black', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'red', 6: 'white', 7: 'brown'}
@@ -171,26 +203,27 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 		return self._lcd
 	def sound(self):
 		return self._sound
+	def camera(self):
+		return self._camera
 	def publish(self,topic,data):
 		iot.publish(bytes("%s/%s"%(iot_name,topic)),bytes(data))
-	#
 	def help(self):
 		print(self.__help['ru'])
-	def done(self):
+	def done(self,stop='hold'):
 		try:
-			self._motors['outA'].stop()
+			self._motors['outA'].stop(stop)
 		except:
 			pass
 		try:
-			self._motors['outB'].stop()
+			self._motors['outB'].stop(stop)
 		except:
 			pass
 		try:
-			self._motors['outC'].stop()
+			self._motors['outC'].stop(stop)
 		except:
 			pass
 		try:
-			self._motors['outD'].stop()
+			self._motors['outD'].stop(stop)
 		except:
 			pass
 	#sound
@@ -208,113 +241,101 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 		self._sound.volume(vol)
 	#move
 	def speed(self,value):
-		self._speed=value
-	def forward(self,rot=1,stop='hold'):
+		self._speed=abs(int(value))
+	def forward(self,rot=1):
 		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].forward(rot,stop,poll=False)
+			self._motors['outB'].run(speed=self._speed)
 		except:
 			pass
 		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].forward(rot,stop)
+			self._motors['outC'].rotate(rot=abs(rot),speed=self._speed)
 		except:
 			pass
-	def backward(self,rot=1,stop='hold'):
+	def backward(self,rot=1):
 		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].backward(rot,stop,poll=False)
-		except:
-			pass
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].backward(rot,stop)
-		except:
-			pass
-	def left(self,rot=1,stop='hold'):
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].backward(rot,stop,poll=False)
+			self._motors['outB'].run(speed=-self._speed)
 		except:
 			pass
 		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].forward(rot,stop)
+			self._motors['outC'].rotate(rot=-abs(rot),speed=self._speed)
 		except:
 			pass
-	def right(self,rot=1,stop='hold'):
+	def left(self,rot=1):
 		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].backward(rot,stop,poll=False)
-		except:
-			pass
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].forward(rot,stop)
-		except:
-			pass
-	def roundLeft(self,rot=1,twist=0.5,stop='hold'):
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
+			self._motors['outC'].run(speed=-self._speed)
 		except:
 			pass
 		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].rotate(rot=rot,speed=self._speed,stop=stop)
+			self._motors['outB'].rotate(rot=abs(rot),speed=self._speed)
 		except:
 			pass
-	def roundRight(self,rot=1,twist=0.5,stop='hold'):
+	def right(self,rot=1):
 		try:
-			self._motors['outB'].speed(self._speed)
-			self._motors['outB'].rotate(rot=rot,speed=self._speed*twist,stop=stop,poll=False)
-		except:
-			pass
-		try:
-			self._motors['outC'].speed(self._speed)
-			self._motors['outC'].rotate(rot=rot,speed=self._speed,stop=stop)
-		except:
-			pass
-	def run(self,speed=SPEED_DEFAULT,stop='coast'):
-		try:
-			self._motors['outB'].run(speed,stop)
+			self._motors['outB'].run(speed=-self._speed)
 		except:
 			pass
 		try:
-			self._motors['outC'].run(speed,stop)
+			self._motors['outC'].rotate(rot=abs(rot),speed=self._speed)
 		except:
 			pass
-	def stop(self):
+	def roundLeft(self,rot=1,twist=0.5):
 		try:
-			self._motors['outB'].stop()
+			self._motors['outC'].run(speed=self._speed*twist)
 		except:
 			pass
 		try:
-			self._motors['outC'].stop()
+			self._motors['outB'].rotate(rot=rot,speed=self._speed)
+		except:
+			pass
+	def roundRight(self,rot=1,twist=0.5):
+		try:
+			self._motors['outB'].run(speed=self._speed*twist)
+		except:
+			pass
+		try:
+			self._motors['outC'].rotate(rot=rot,speed=self._speed)
+		except:
+			pass
+	def run(self):
+		try:
+			self._motors['outB'].run(self._speed)
+		except:
+			pass
+		try:
+			self._motors['outC'].run(self._speed)
+		except:
+			pass
+	def stop(self,stop='hold'):
+		try:
+			self._motors['outB'].stop(stop)
+		except:
+			pass
+		try:
+			self._motors['outC'].stop(stop)
 		except:
 			pass
 	#object
 	def penup(self,rot=0.125):
-		self._motors['outA'].rotate(rot=-abs(rot),speed=self._speed//2,stop='hold',poll=True)
+		self._motors['outA'].rotate(rot=-abs(rot),speed=self._speed//2)
 	def pendown(self,rot=0.125):
-		self._motors['outA'].rotate(rot=abs(rot),speed=self._speed//2,stop='hold',poll=True)
+		self._motors['outA'].rotate(rot=abs(rot),speed=self._speed//2)
 	def grab(self,rot=1):
-		self._motors['outA'].rotate(rot=-abs(rot),speed=self._speed//2,stop='hold',poll=True)
+		self._motors['outA'].rotate(rot=-abs(rot),speed=self._speed//2)
 	def put(self,rot=1):
-		self._motors['outA'].rotate(rot=abs(rot),speed=self._speed//2,stop='hold',poll=True)
+		self._motors['outA'].rotate(rot=abs(rot),speed=self._speed//2)
 	#sensors
-	def is_object(self,distance=8):
+	def is_object(self,distance=12):
 		return self._sensors['in1'].value()<distance
-	def is_wall(self,distance=8):
-		self.is_object(distance)
-	def is_wall_forward(self,distance=8):
-		self.is_object(distance)
-	def is_wall_backward(self,distance=8):
-		self.is_object(distance)
-	def is_wall_left(self,distance=8):
-		self.is_object(distance)
-	def is_wall_right(self,distance=8):
-		self.is_object(distance)
+	def is_wall(self,distance=12):
+		return self.is_object(distance)
+	def is_wall_forward(self,distance=12):
+		return self.is_object(distance)
+	def is_wall_backward(self,distance=12):
+		return self.is_object(distance)
+	def is_wall_left(self,distance=12):
+		return self.is_object(distance)
+	def is_wall_right(self,distance=12):
+		return self.is_object(distance)
 	def is_color(self,color=6):
 		pass
 	def is_light(self):

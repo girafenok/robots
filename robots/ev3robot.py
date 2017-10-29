@@ -35,29 +35,28 @@ class EV3Motor(AbstractMotor):
 		with open('/sys/class/tacho-motor/'+self._address+'/address','r') as fp:
 			self._name=fp.read().replace('\n','')
 		self.reset()
-	def reset(self):
-		self._set_attributes([('command','reset')])
-	def _set_attributes(self,attributes):
+	def __set_attributes(self,attributes):
 		for attr in attributes:
 			with open('/sys/class/tacho-motor/%s/%s'%(self._address,attr[0]),'w') as fp:
 				fp.write(str(attr[1]))	
-	def _get_attribute(self,attr):
+	def __get_attribute(self,attr):
 		with open('/sys/class/tacho-motor/%s/%s'%(self._address,attr),'r') as fp:
 			return fp.read().replace('\n','')
-	def rotate(self,speed=SPEED_DEFAULT,rot=1,stop='hold',poll=True):
-		self._set_attributes([('position_sp',int(rot*360)),('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-to-rel-pos')])
-		start_position=int(self._get_attribute('position'))
-		if poll:
+	def reset(self):
+		self.__set_attributes([('command','reset')])
+	def rotate(self,speed=SPEED_DEFAULT,rot=1):
+		speed=abs(int(speed*self.speed_koef)) if rot>0 or rot==0 and speed>=0 else -abs(int(speed*self.speed_koef))
+		self.__set_attributes([('speed_sp',speed),('command','run-forever')])
+		start_position=int(self.__get_attribute('position'))
+		if rot:
 			if rot>=0:
-				while int(self._get_attribute('position'))<start_position+abs(rot)*360: sleep(0.001)
+				while int(self.__get_attribute('position'))<start_position+abs(rot)*360: sleep(0.0001)
 			else:
-				while int(self._get_attribute('position'))>start_position-abs(rot)*360: sleep(0.001)
-	def run(self,speed=SPEED_DEFAULT,stop='coast'):
-		self._set_attributes([('speed_sp',int(speed*self.speed_koef)),('stop_action',stop),('command','run-forever')])
-	def stop(self):
-		self._set_attributes([('command','stop')])
+				while int(self.__get_attribute('position'))>start_position-abs(rot)*360: sleep(0.0001)
+	def stop(self,stop='coast'):
+		self.__set_attributes([('stop_action',stop),('command','stop')])
 	def value(self):
-		int(self._get_attribute('position'))
+		int(self.__get_attribute('position'))
 	def _publish(self):
 		attrs={}
 		for attr in ['position','speed_sp','stop_action']:
@@ -166,21 +165,8 @@ class EV3LCD(object):
 		#~ os.close(fp)
 		#~ 
 
-class EV3Camera(object):
-	camera=None
-	def __init__(self,address):
-		self.__address=address
-		try:
-			import cv2
-			self.camera=cv2.VideoCapture(self.__address)
-			#~ capture.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH ,640)
-			#~ capture.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT ,480)
-		except:
-			pass
-	def capture(self):
-		return self.camera.read()[1] if self.camera!=None else None
-	def publish(self):
-		pass
+class EV3Camera(AbstractCamera):
+	pass
 class EV3Robot(AbstractRobot):
 	_sensor_types={'lego-ev3-color':lambda a: EV3Color(a),'lego-nxt-touch':lambda a: EV3Sensor(a),'lego-ev3-touch':lambda a: EV3Sensor(a),'lego-ev3-ir':lambda a: EV3Sensor(a),'lego-ev3-us':lambda a: EV3Sensor(a),'lego-nxt-us':lambda a: EV3Sensor(a),'lego-nxt-light':lambda a: EV3Sensor(a),'nxt-analog':lambda a: EV3Sensor(a),'lego-ev3-gyro':lambda a: EV3Sensor(a)}
 	def __init__(self,camera=False):
