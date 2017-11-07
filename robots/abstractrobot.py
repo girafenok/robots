@@ -338,8 +338,8 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 		return self.is_object(distance)
 	def is_color(self,color=6):
 		pass
-	def is_light(self):
-		pass
+	def is_light(self,value=512):
+		return self._sensors['in2'].value()>value
 	def is_pushbutton_press(self):
 		try:
 			res=int(self._sensors['in3'].value())==1
