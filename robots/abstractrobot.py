@@ -336,9 +336,13 @@ robo.roundRight(3,0.5)  - плавно повернуться направо н�
 		return self.is_object(distance)
 	def is_wall_right(self,distance=12):
 		return self.is_object(distance)
-	def is_color(self,color=6):
-		pass
-	def is_light(self,value=512):
+	def is_color(self,color='black'):
+		return self.sensor('in4').color()==color
+	def is_light(self,value=300):
+		try:
+			robo.sensor('in1').set_mode_light()
+		except:
+			pass
 		return self._sensors['in2'].value()>value
 	def is_pushbutton_press(self):
 		try:

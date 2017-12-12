@@ -120,8 +120,8 @@ class NXTLight(NXTSensor):
 class NXTColor(NXTSensor):
 	__name='color'
 	__colors={0:'none', 1: 'black', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'red', 6: 'white', 7: 'brown'}
-	def __init__(self,address):
-		NXTSensor.__init__(self,address)
+	def __init__(self,address,brick)):
+		NXTSensor.__init__(self,address,brick)
 		self.set_mode_color()
 	def set_mode_color(self):
 		self.set_mode('COL-COLOR')
@@ -190,8 +190,8 @@ class NXTLCD(object):
 		#~ 
 
 class NXTRobot(AbstractRobot):
-	_sensor_types={'':lambda a,b: None,None: lambda a,b: None,'light':lambda a,b: NXTLight(a,b),'button':lambda a,b: NXTPushButton(a,b),'ultrasonic':lambda a,b: NXTUltrasonic(a,b)}
-	def __init__(self,address,sensors=('ultrasonic','light','button',None)):
+	_sensor_types={'':lambda a,b: None,None: lambda a,b: None,'light':lambda a,b: NXTLight(a,b),'button':lambda a,b: NXTPushButton(a,b),'ultrasonic':lambda a,b: NXTUltrasonic(a,b),'color':lambda a,b: NXTColor(a,b)}
+	def __init__(self,address,sensors=('ultrasonic','light','button','color')):
 		self._brick=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
 		self._brick.connect((address, 1))
 		#Motor

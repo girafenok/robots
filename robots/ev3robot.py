@@ -103,7 +103,22 @@ class EV3Color(EV3Sensor):
 		return self.__colors[int(self.value())]
 	def rgb(self):
 		return (self.value(),self.value1(),self.value2())
-
+class EV3Gyro(EV3Sensor):
+	def __init__(self,address):
+		EV3Sensor.__init__(self,address)
+		self.set_mode_tilt_angle()
+	def set_mode_gyro_angle(self): #angle, degree, -32768..32768
+		self.set_mode('GYRO-ANG')
+	def set_mode_gyro_rate(self): #rotational speed, degrees per second, -440..440
+		self.set_mode('GYRO-RATE')	
+	def set_mode_gyro_ga(self): #angle and rotational speed, degrees (value0)and degrees per second (value1)
+		self.set_mode('GYRO-G&A')	
+	def set_mode_gyro_fas(self): #raw_value, -1464..1535
+		self.set_mode('GYRO-FAS')	
+	def set_mode_tilt_angle(self): #tilt angle, degree, -180..180
+		self.set_mode('TILT-ANG')	
+	def set_mode_tilt_rate(self): #rotational speed, degrees per second, -440..440
+		self.set_mode('TILT-RATE')	
 class EV3Leds(object):
 	colors={'black':{'green':'0','red':'0'},'orange':{'green':'255','red':'255'},'red':{'green':'0','red':'255'},'yellow':{'green':'255','red':'35'},'green':{'green':'255','red':'0'},'brown':{'green':'69','red':'89'}}
 	def __init__(self,address):
@@ -168,7 +183,7 @@ class EV3LCD(object):
 class EV3Camera(AbstractCamera):
 	pass
 class EV3Robot(AbstractRobot):
-	_sensor_types={'lego-ev3-color':lambda a: EV3Color(a),'lego-nxt-touch':lambda a: EV3Sensor(a),'lego-ev3-touch':lambda a: EV3Sensor(a),'lego-ev3-ir':lambda a: EV3Sensor(a),'lego-ev3-us':lambda a: EV3Sensor(a),'lego-nxt-us':lambda a: EV3Sensor(a),'lego-nxt-light':lambda a: EV3Sensor(a),'nxt-analog':lambda a: EV3Sensor(a),'lego-ev3-gyro':lambda a: EV3Sensor(a)}
+	_sensor_types={'lego-ev3-color':lambda a: EV3Color(a),'lego-nxt-touch':lambda a: EV3Sensor(a),'lego-ev3-touch':lambda a: EV3Sensor(a),'lego-ev3-ir':lambda a: EV3Sensor(a),'lego-ev3-us':lambda a: EV3Sensor(a),'lego-nxt-us':lambda a: EV3Sensor(a),'lego-nxt-light':lambda a: EV3Sensor(a),'nxt-analog':lambda a: EV3Sensor(a),'lego-ev3-gyro':lambda a: EV3Gyro(a),'ht-nxt-compass':lambda a: EV3Gyro(a)}
 	def __init__(self,camera=False):
 		#Camera
 		if camera: self._camera=EV3Camera(0)
