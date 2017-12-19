@@ -124,17 +124,17 @@ class NXTColor(NXTSensor):
 		NXTSensor.__init__(self,address,brick)
 		self.set_mode_color()
 	def set_mode_color(self):
-		self.set_mode('COL-COLOR')
+		pass
 	def set_mode_light(self):
-		self.set_mode('COL-REFLECT')
+		pass
 	def set_mode_ambient(self):
-		self.set_mode('COL-AMBIENT')
+		pass
 	def set_mode_rgb(self):
-		self.set_mode('RGB-RAW')
+		pass
 	def color(self):
 		return self.__colors[int(self.value())]
 	def rgb(self):
-		return (self.value(),self.value1(),self.value2())
+		pass
 
 class NXTUltrasonic(NXTSensor):
 	__name='ultrasonic'

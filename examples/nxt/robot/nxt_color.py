@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from ev3robot import *
+from nxtrobot import *
 from time import *
 
-# port 4 - lego ev3 color sensor
-robo=EV3Robot()
+# port 4 - nxt ev3 color sensor
+robo=NXTRobot("00:16:53:14:61:93")
 robo.beep()
 while True:
 	if robo.is_color('none'): #no color
