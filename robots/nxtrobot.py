@@ -120,17 +120,23 @@ class NXTLight(NXTSensor):
 class NXTColor(NXTSensor):
 	__name='color'
 	__colors={0:'none', 1: 'black', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'red', 6: 'white', 7: 'brown'}
-	def __init__(self,address,brick)):
+	def __init__(self,address,brick):
 		NXTSensor.__init__(self,address,brick)
 		self.set_mode_color()
 	def set_mode_color(self):
-		pass
+		self.set_mode(0x0D)
 	def set_mode_light(self):
-		pass
+		self.set_mode(0x11)
 	def set_mode_ambient(self):
 		pass
 	def set_mode_rgb(self):
-		pass
+		self.set_mode(0x0E)
+		r = int(self.value())
+		self.set_mode(0x0F)
+		g = int(self.value())
+		self.set_mode(0x10)
+		b = int(self.value())
+		return r, g, b
 	def color(self):
 		return self.__colors[int(self.value())]
 	def rgb(self):
@@ -160,7 +166,7 @@ class NXTSound(NXTComm,AbstractSound):
  		sleep(time_ms/1000.0)
 		self._send(chr(0x00)+chr(0x03)+chr(0)+chr(0)+chr(0)+chr(0))
 	def _say(self,msg,speed=175,bass=100):
-		pass
+		os.system('espeak -a %s -s %s "%s" --stdout | aplay -q'%(bass,speed,msg))
 	def _volume(self,volume):
 		pass
 			
